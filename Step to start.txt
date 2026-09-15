@@ -1,0 +1,23 @@
+==================================================
+TARGETFIT STUDIO - DAILY STARTUP INSTRUCTIONS
+==================================================
+
+1. OPEN COMMAND PROMPT:
+   Press the Windows key, type "cmd", and open the Command Prompt.
+
+2. NAVIGATE TO PROJECT DIRECTORY:
+   Type the following command and press Enter:
+   cd /d D:\EBM\Automation\targetfit-studio
+
+3. ACTIVATE VIRTUAL ENVIRONMENT (If applicable):
+   Type the following command and press Enter:
+   venv\Scripts\activate
+
+4. LAUNCH THE APPLICATION:
+   Type the following command and press Enter:
+   streamlit run app.py
+
+5. ACCESS THE APP:
+   Copy the Local URL provided in the terminal (usually http://localhost:8501) 
+   and paste it into your web browser.
+==================================================
