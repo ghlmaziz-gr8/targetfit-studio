@@ -1,3 +1,13 @@
+# Version & Deployment Tracking
+APP_VERSION = "v1.1.0"
+DEPLOYED_DATE = "September 16, 2026"
+
+# Add this inside your sidebar or footer display logic
+with st.sidebar:
+  st.markdown("---")
+  st.markdown(f"**App Version:** `{APP_VERSION}`")
+  st.markdown(f"**Deployed:** `{DEPLOYED_DATE}`")
+
 from datetime import datetime
 from email.message import EmailMessage
 import os
