@@ -112,11 +112,12 @@ def fetch_job_from_url(url):
 
 
 def generate_with_multi_model_fallback(prompt):
-  """Cycles through models and retries automatically to prevent interview downtime."""
+  """Robust exponential backoff retry logic to wait out API traffic spikes."""
   models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash"]
 
   for model_name in models_to_try:
-    for attempt in range(2):
+    # Try each model 3 times with increasing wait times (5s, 10s, 15s)
+    for attempt in range(3):
       try:
         response = client.models.generate_content(
             model=model_name, contents=prompt
@@ -125,13 +126,20 @@ def generate_with_multi_model_fallback(prompt):
           return response.text
       except Exception as e:
         err_str = str(e)
-        if "503" in err_str or "429" in err_str or "UNAVAILABLE" in err_str:
-          time.sleep(2)
+        if (
+            "503" in err_str
+            or "429" in err_str
+            or "UNAVAILABLE" in err_str
+            or "RESOURCE_EXHAUSTED" in err_str
+        ):
+          # Exponential backoff: wait longer with each failed attempt
+          wait_time = 5 * (attempt + 1)
+          time.sleep(wait_time)
           continue
         else:
           raise e
   raise Exception(
-      "All fallback models experienced high demand spikes. Safe-Mode engaged."
+      "API traffic limits persisted across all retries. Safe-Mode engaged."
   )
 
 
