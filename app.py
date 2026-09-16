@@ -362,14 +362,14 @@ if submit_button:
                                 To demonstrate genuine hands-on technical execution capability rather than abstract advisory theory, this entire enterprise assessment platform was custom-architected and coded end-to-end by <b>Mustafa</b>. The solution integrates <b>Python, Streamlit, multi-model Google Gemini GenAI APIs with automated fallback resilience, asynchronous PDF document parsing, and secure SMTP mail dispatch protocols</b>—proving an active ability to build production-grade AI applications from scratch.
 
                             # HTML-formatted version block for the email
-                            <li><b>System Build & Deployment:</b></li>
                                 <ul>
-                                    <li><b>App Version:</b> {APP_VERSION}</li>
-                                    <li><b>Deployed Timestamp:</b> {DEPLOYED_DATE}</li>
-                                    <li><b>Environment:</b> Streamlit Community Cloud (Production)</li>
+                                    <li><b>System Build & Deployment:</b></li>
+                                    <ul>
+                                        <li><b>App Version:</b> {APP_VERSION}</li>
+                                        <li><b>Deployed Timestamp:</b> {DEPLOYED_DATE}</li>
+                                        <li><b>Environment:</b> Streamlit Community Cloud (Production)</li>
+                                    </ul>                       
                                 </ul>
-                            </ul> 
-
                             </p>
                         </div>
                     </div>
