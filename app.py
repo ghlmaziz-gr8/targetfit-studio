@@ -360,6 +360,20 @@ if submit_button:
                             <div style="font-size: 13px; font-weight: bold; color: #0A2540; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Engineering Craftsmanship & Technical Showcase</div>
                             <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.6;">
                                 To demonstrate genuine hands-on technical execution capability rather than abstract advisory theory, this entire enterprise assessment platform was custom-architected and coded end-to-end by <b>Mustafa</b>. The solution integrates <b>Python, Streamlit, multi-model Google Gemini GenAI APIs with automated fallback resilience, asynchronous PDF document parsing, and secure SMTP mail dispatch protocols</b>—proving an active ability to build production-grade AI applications from scratch.
+
+                            # HTML-formatted version block for the email
+                            <h3>Engineering Craftsmanship & Technical Showcase</h3>
+                            <ul>
+                                <li><b>Architecture Highlights:</b> Full-stack enterprise assessment portal built with Python and Streamlit.</li>
+                                <li><b>Resiliency:</b> Advanced exponential backoff and multi-model fallback protocol.</li>
+                                <li><b>System Build & Deployment:</b></li>
+                                <ul>
+                                    <li><b>App Version:</b> {APP_VERSION}</li>
+                                    <li><b>Deployed Timestamp:</b> {DEPLOYED_DATE}</li>
+                                    <li><b>Environment:</b> Streamlit Community Cloud (Production)</li>
+                                </ul>
+                            </ul> 
+
                             </p>
                         </div>
                     </div>
