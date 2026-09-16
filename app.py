@@ -23,12 +23,31 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Version & Deployment Tracking (Place it here) ---
-APP_VERSION = "v1.1.0"
-DEPLOYED_DATE = "September 16, 2026"
+import subprocess
+from datetime import datetime
+
+
+# Automatically fetch the latest git commit hash for versioning
+def get_git_version():
+  try:
+    commit_hash = (
+        subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.STDOUT
+        )
+        .decode("utf-8")
+        .strip()
+    )
+    return f"v1.1.0-{commit_hash}"
+  except Exception:
+    return "v1.1.0"
+
+
+APP_VERSION = get_git_version()
+# Automatically updates to the current date on startup/redeploy
+DEPLOYED_DATE = datetime.now().strftime("%B %d, %Y %H:%M")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(f"**App Version:** `{APP_Verification}`" if False else f"**App Version:** `{APP_VERSION}`")
+st.sidebar.markdown(f"**App Version:** `{APP_VERSION}`")
 st.sidebar.markdown(f"**Deployed:** `{DEPLOYED_DATE}`")
 
 
