@@ -1,12 +1,3 @@
-# Version & Deployment Tracking
-APP_VERSION = "v1.1.0"
-DEPLOYED_DATE = "September 16, 2026"
-
-# Replace the 'with st.sidebar:' block with this:
-st.sidebar.markdown("---")
-st.sidebar.markdown(f"**App Version:** `{APP_VERSION}`")
-st.sidebar.markdown(f"**Deployed:** `{DEPLOYED_DATE}`")
-
 from datetime import datetime
 from email.message import EmailMessage
 import os
@@ -31,6 +22,15 @@ st.set_page_config(
     page_icon="🎯",
     layout="wide",
 )
+
+# --- Version & Deployment Tracking (Place it here) ---
+APP_VERSION = "v1.1.0"
+DEPLOYED_DATE = "September 16, 2026"
+
+st.sidebar.markdown("---")
+st.sidebar.markdown(f"**App Version:** `{APP_Verification}`" if False else f"**App Version:** `{APP_VERSION}`")
+st.sidebar.markdown(f"**Deployed:** `{DEPLOYED_DATE}`")
+
 
 st.title("🎯 TargetFit Studio | Enterprise Executive Assessment Engine")
 st.markdown(
