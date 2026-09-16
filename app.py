@@ -121,12 +121,12 @@ def fetch_job_from_url(url):
 
 
 def generate_with_multi_model_fallback(prompt):
-  """Robust exponential backoff retry logic to wait out API traffic spikes."""
+  """Ultra-patient exponential backoff retry logic to ride out heavy API traffic spikes."""
   models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash"]
 
   for model_name in models_to_try:
-    # Try each model 3 times with increasing wait times (5s, 10s, 15s)
-    for attempt in range(3):
+    # Try each model 5 times with deep patience (10s, 20s, 30s, 40s, 50s)
+    for attempt in range(5):
       try:
         response = client.models.generate_content(
             model=model_name, contents=prompt
@@ -141,14 +141,15 @@ def generate_with_multi_model_fallback(prompt):
             or "UNAVAILABLE" in err_str
             or "RESOURCE_EXHAUSTED" in err_str
         ):
-          # Exponential backoff: wait longer with each failed attempt
-          wait_time = 5 * (attempt + 1)
+          # Deep exponential backoff: give the server more time to recover
+          wait_time = 10 * (attempt + 1)
           time.sleep(wait_time)
           continue
         else:
           raise e
   raise Exception(
-      "API traffic limits persisted across all retries. Safe-Mode engaged."
+      "API traffic limits persisted across all extended retries. Safe-Mode"
+      " engaged."
   )
 
 
