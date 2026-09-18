@@ -228,7 +228,11 @@ def get_fallback_structured_data(comp_name, role_title):
 def generate_structured_assessment(
     prompt, comp_name, role_title, safe_mode=True
 ):
-  models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+  models_to_try = [
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-pro",
+  ]
   last_exception = None
   for model_name in models_to_try:
     for attempt in range(3):
@@ -245,9 +249,16 @@ def generate_structured_assessment(
         err_str = str(e)
         if any(
             code in err_str
-            for code in ["503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED"]
+            for code in [
+                "503",
+                "429",
+                "UNAVAILABLE",
+                "RESOURCE_EXHAUSTED",
+                "404",
+                "NOT_FOUND",
+            ]
         ):
-          time.sleep(5 * (attempt + 1))
+          time.sleep(2 * (attempt + 1))
           continue
         else:
           break
@@ -256,8 +267,7 @@ def generate_structured_assessment(
     return get_fallback_structured_data(comp_name, role_title)
   else:
     raise last_exception or Exception(
-        "API rate/traffic limit persisted across retries with Safe-Mode"
-        " disabled."
+        "API generation failed across fallback models - 9/18/2026 4:04PM Version."
     )
 
 
