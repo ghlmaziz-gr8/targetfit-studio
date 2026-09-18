@@ -188,7 +188,6 @@ def get_dynamic_models(client, preferred_order=None):
         "gemini-2.5-flash",
         "gemini-2.0-flash",
         "gemini-2.5-pro",
-        "gemini-1.5-pro",
     ]
   available = set()
   try:
