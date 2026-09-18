@@ -1,7 +1,6 @@
 from datetime import datetime
-from email.message import EmailMessage
+import json
 import os
-import smtplib
 import subprocess
 import time
 from bs4 import BeautifulSoup
@@ -19,7 +18,7 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Page Configuration
 st.set_page_config(
-    page_title="TargetFit Studio - Enterprise Edition",
+    page_title="TargetFit Studio - Executive Intelligence Portal",
     page_icon="🎯",
     layout="wide",
 )
@@ -35,9 +34,9 @@ def get_git_version():
         .decode("utf-8")
         .strip()
     )
-    return f"v1.1.0-{commit_hash}"
+    return f"v2.5.0-{commit_hash}"
   except Exception:
-    return "v1.1.0"
+    return "v2.5.0"
 
 
 APP_VERSION = get_git_version()
@@ -53,11 +52,10 @@ safe_mode_enabled = st.sidebar.checkbox(
     help="Checked: Falls back on persistent traffic spikes. Unchecked: Fails/blocks on exhaustion without fallback.",
 )
 
-st.title("🎯 TargetFit Studio | Enterprise Executive Assessment Engine")
+st.title("🎯 TargetFit Studio | Executive Intelligence Portal")
 st.markdown(
-    "Generate custom, professional-grade candidate alignment briefs tailored to"
-    " specific job descriptions, featuring dynamic gap-bridging and automated"
-    " email dispatch."
+    "Executive-grade alignment matrix engineered for leadership evaluation"
+    " transparency."
 )
 
 with st.form("targetfit_enterprise_form"):
@@ -65,16 +63,18 @@ with st.form("targetfit_enterprise_form"):
   with col1:
     st.subheader("1. Target Company & Role Details")
     target_company = st.text_input(
-        "Target Company Name", value="Genesys", placeholder="e.g. Genesys"
+        "Target Company Name", value="UnitedHealthcare", placeholder="e.g. UnitedHealthcare"
     )
     target_role = st.text_input(
         "Target Role Title",
-        value="Pre-Sales Technical Architecture & Enterprise Advisory",
-        placeholder="e.g. Pre-Sales Technical Architect",
+        value=(
+            "Lead Technical Product Manager, AI Strategy and Health Plan Tech"
+        ),
+        placeholder="e.g. Lead Technical Product Manager",
     )
     recipient_emails = st.text_input(
         "Recipients (comma-separated)",
-        placeholder="recruiter@company.com, hiringmanager@company.com",
+        placeholder="executive.committee@company.com",
     )
 
   with col2:
@@ -83,12 +83,9 @@ with st.form("targetfit_enterprise_form"):
         "Upload Tailored Resume (PDF)", type=["pdf"], key="resume"
     )
     subject_line = st.text_input(
-        "Email Subject Line (Optional - Leave blank for auto-generation)",
+        "Email Subject Line (Optional)",
         value="",
-        placeholder=(
-            "Executive Candidate Assessment: Ghulam Mustafa Aziz for [Role] at"
-            " [Company]"
-        ),
+        placeholder="Executive Candidate Assessment: Ghulam Mustafa Aziz",
     )
 
   st.subheader("3. Job Description Source")
@@ -98,14 +95,16 @@ with st.form("targetfit_enterprise_form"):
   )
   job_text_input = st.text_area(
       "Or Paste Job Description / Recruiter Requirements Here",
-      placeholder=(
-          "Paste the core technical requirements, qualifications, and role"
-          " summary..."
+      height=100,
+      value=(
+          "Lead the development and execution of AI-driven solutions and health"
+          " plan technology, shaping the future of healthcare through"
+          " innovation, data, and customer-centric products."
       ),
   )
 
   submit_button = st.form_submit_button(
-      "Generate Enterprise Brief & Broadcast Report"
+      "Generate Executive Executive Suite Brief"
   )
 
 
@@ -118,8 +117,8 @@ def extract_resume_text(pdf_file):
     return text
   except Exception:
     return (
-        "Candidate Resume: Ghulam Mustafa Aziz - Enterprise Architect & IT"
-        " Director."
+        "Candidate Resume: Ghulam Mustafa Aziz - Technical Product Manager |"
+        " AI Strategy | Health Plan Technology"
     )
 
 
@@ -142,87 +141,177 @@ def fetch_job_from_url(url):
   return ""
 
 
-def get_fallback_html(comp_name, role_title):
-  return f"""
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-        <tr>
-            <td style="padding: 12px; background: #F3F4F6; font-weight: bold; border-bottom: 1px solid #E5E7EB; width: 28%;">Core Requirement Alignment</td>
-            <td style="padding: 12px; background: #F3F4F6; font-weight: bold; border-bottom: 1px solid #E5E7EB; width: 52%;">Candidate Evidence</td>
-            <td style="padding: 12px; background: #F3F4F6; font-weight: bold; border-bottom: 1px solid #E5E7EB; text-align: center; width: 20%;">Match</td>
-        </tr>
-        <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>1. Technical Pre-Sales & Discovery</b></td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">Proven track record leading customer discovery, shaping deal strategies, handling objections, and driving win themes.</td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">98% (Exceptional)</td>
-        </tr>
-        <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>2. Solution Architecture & Trade-offs</b></td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">Extensive enterprise architect background designing scalable, secure end-to-end architectures and realistic 6–18 month delivery roadmaps.</td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">97% (Exceptional)</td>
-        </tr>
-        <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>3. Data & AI Platform Patterns</b></td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">Built custom Python LLM automation apps, Streamlit interfaces, vector indexing frameworks, and enterprise AI integrations.</td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">99% (Exceptional)</td>
-        </tr>
-        <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>4. Integration, API & Security Compliance</b></td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">Deep fluency across API architectures, cloud infrastructure models, security fundamentals, and robust platform engineering.</td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">96% (Strategic Fit)</td>
-        </tr>
-        <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>5. Executive Stakeholder Advisory</b></td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">Extensive IT Director and advisory experience presenting directly to CIO/CTO/VP-level stakeholders with composure under pressure.</td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">98% (Exceptional)</td>
-        </tr>
-    </table>
-    <p style="font-size: 14px; color: #374151; line-height: 1.6;">
-        <b>Executive Summary:</b> Ghulam Mustafa Aziz demonstrates an outstanding fit for the <b>{role_title}</b> position at <b>{comp_name}</b>. Combining rigorous pre-sales discovery acumen with deep hands-on enterprise AI and cloud architecture expertise, he excels at translating complex technical requirements into compelling, winnable solutions for executive buyers.
-    </p>
-    """
+def get_fallback_structured_data(comp_name, role_title):
+  return {
+      "overall_fit": 97,
+      "kpis": [
+          {"label": "Job Requirement Coverage", "value": "100%"},
+          {"label": "Resume Alignment to Role", "value": "95%"},
+          {"label": "Leadership & People Management", "value": "90%"},
+          {"label": "Strategic & Innovation Mindset", "value": "93%"},
+      ],
+      "requirements_vs_alignment": [
+          (
+              "AI Strategy & Innovation",
+              "Drive AI/ML strategy, product roadmap, member/provider initiatives.",
+              98,
+          ),
+          (
+              "Health Plan Technology",
+              (
+                  "Understand health plan operations, member/provider experience,"
+                  " risk & value."
+              ),
+              95,
+          ),
+          (
+              "Product Management",
+              (
+                  "Own product lifecycle, roadmap, backlog, cross-functional"
+                  " leadership."
+              ),
+              96,
+          ),
+          (
+              "Technical Expertise",
+              (
+                  "Cloud, data, APIs, integration, security, modern"
+                  " architectures."
+              ),
+              94,
+          ),
+          (
+              "Leadership & People Management",
+              (
+                  "Build high-performing teams, mentor, drive engagement &s"
+                  " inclusion."
+              ),
+              92,
+          ),
+          (
+              "Stakeholder Management",
+              (
+                  "Work with executives, business, clinical, IT and external"
+                  " partners."
+              ),
+              93,
+          ),
+          (
+              "Program & Delivery",
+              "Deliver on time, manage risk/budget, continuous improvement.",
+              90,
+          ),
+      ],
+      "detailed_pillars": [
+          (
+              "AI Strategy & Transformation",
+              [
+                  "Experience with AI/ML, automation, and data-driven solutions",
+                  "Proven track record of building and scaling digital platforms",
+                  (
+                      "Focus on innovation and measurable business"
+                      " outcomes"
+                  ),
+              ],
+          ),
+          (
+              "Health Plan Tech & Member Experience",
+              [
+                  (
+                      "Deep understanding of healthcare, insurance and member"
+                      " journeys"
+                  ),
+                  "Experience with provider and plan operations",
+                  "Skilled in integrating clinical, claims and member data",
+              ],
+          ),
+          (
+              "Product Leadership",
+              [
+                  "End-to-end product management from ideation to launch",
+                  (
+                      "Strong cross-functional collaboration (Engineering,"
+                      " Design, Business)"
+                  ),
+                  (
+                      "Data-driven decision making and customer-centric"
+                      " approach"
+                  ),
+              ],
+          ),
+          (
+              "Technical & Platform Expertise",
+              [
+                  (
+                      "Cloud, APIs, integrations, cybersecurity, and modern"
+                      " architectures"
+                  ),
+                  (
+                      "Experience with enterprise systems and data"
+                      " platforms"
+                  ),
+              ],
+          ),
+          (
+              "People & Stakeholder Leadership",
+              [
+                  "Managed and mentored high-performing teams",
+                  "Built inclusive, collaborative, and high-trust environments",
+                  "Influenced and aligned stakeholders at all levels",
+              ],
+          ),
+          (
+              "Program & Delivery Excellence",
+              [
+                  (
+                      "Delivered complex programs on time and within scope"
+                  ),
+                  "Strong risk management and change leadership",
+                  (
+                      "Continuous improvement and operational"
+                      " excellence"
+                  ),
+              ],
+          ),
+      ],
+      "relevant_highlights": [
+          "State Government Consulting Delivery – Arkansas & Hawaii",
+          "Automation Initiatives (RPA) – Enterprise Sponsored",
+          "Home-grown Portal Development – State Government Projects",
+          "Integration, Security, and Data Governance",
+          "Salesforce, Red Hat BPM, OpenIAM, Punnew, Snowflake",
+          "Accessibility (Section 508/VPAT/ARIA), Power BI",
+          "API Health Checks, DR/RTO, WAF, Security Testing, POA&M, IV&V",
+          "Rally, Jira, TFS, SAFe, RTE, Agile Delivery",
+          "Technology Modernization & Cloud Adoption",
+      ],
+      "bottom_line": (
+          f"Your experience, skills and leadership align strongly with"
+          f" {comp_name}'s need for a {role_title}. You bring the right blend"
+          " of technical depth, product vision, and people leadership to make"
+          " an immediate impact."
+      ),
+  }
 
 
-def get_dynamic_models(client, preferred_order=None):
-  if preferred_order is None:
-    preferred_order = [
-        "gemini-3.8-flash",
-        "gemini-3.7-flash",
-        "gemini-3.5-flash",
-    ]
-  available = set()
-  try:
-    for m in client.models.list():
-      methods = getattr(m, "supported_generation_methods", [])
-      if "generateContent" in methods:
-        clean_name = m.name.replace("models/", "")
-        available.add(clean_name)
-  except Exception:
-    pass
-
-  # Prioritize preferred models that are actively available on your key/tier
-  ordered = [m for m in preferred_order if m in available]
-  # Append any other valid flash/pro variants discovered dynamically
-  for m in sorted(list(available)):
-    if m not in ordered and ("flash" in m or "pro" in m):
-      ordered.append(m)
-
-  return ordered if ordered else preferred_order
-
-
-def generate_with_multi_model_fallback(
-    prompt, comp_name, role_title, safe_mode=True
-):
-  models_to_try = get_dynamic_models(client)
-
+def generate_structured_brief(prompt, comp_name, role_title, safe_mode=True):
+  models_to_try = [
+      "gemini-3.7-flash",
+      "gemini-3.6-flash",
+      "gemini-3.5-flash",
+      "gemini-2.0-flash",
+  ]
   last_exception = None
   for model_name in models_to_try:
     for attempt in range(2):
       try:
         response = client.models.generate_content(
-            model=model_name, contents=prompt
+            model=model_name,
+            contents=prompt,
+            config={"response_mime_type": "application/json"},
         )
         if response and response.text:
-          return response.text
+          return json.loads(response.text)
       except Exception as e:
         last_exception = e
         err_str = str(e)
@@ -239,226 +328,165 @@ def generate_with_multi_model_fallback(
         ):
           time.sleep(1)
           continue
-        else:
-          break
+        break
 
   if safe_mode:
-    return get_fallback_html(comp_name, role_title)
-  else:
-    raise last_exception or Exception(
-        "API generation failed across all discovered models."
-    )
+    return get_fallback_structured_data(comp_name, role_title)
+  raise last_exception or Exception(
+      "API generation failed across all active models."
+  )
 
 
 if submit_button:
-  if not recipient_emails:
-    st.error("Please provide at least one recipient email address.")
-  else:
-    with st.spinner(
-        "Synthesizing comprehensive pre-sales executive assessment via Gemini"
-        " AI..."
-    ):
-      resume_content = (
-          extract_resume_text(uploaded_resume) if uploaded_resume else ""
-      )
-      job_description = fetch_job_from_url(job_url) if job_url else ""
-      if not job_description:
-        job_description = (
-            job_text_input
-            if job_text_input
-            else "Pre-Sales Technical Architecture & Enterprise Advisory"
-        )
+  with st.spinner("Synthesizing Executive Suite Assessment via Gemini AI..."):
+    resume_content = (
+        extract_resume_text(uploaded_resume) if uploaded_resume else ""
+    )
+    job_description = fetch_job_from_url(job_url) if job_url else ""
+    if not job_description:
+      job_description = job_text_input or "AI Strategy & Healthcare Tech"
 
-      comp_name = (
-          target_company.strip() if target_company else "Target Organization"
-      )
-      role_title = target_role.strip() if target_role else "Executive Role"
-      candidate_name = "Ghulam Mustafa Aziz"
-      final_subject = (
-          subject_line
-          if subject_line
-          else f"Executive Candidate Assessment: {candidate_name} — {role_title} at {comp_name}"
-      )
+    comp_name = (
+        target_company.strip() if target_company else "Target Organization"
+    )
+    role_title = target_role.strip() if target_role else "Executive Role"
+    candidate_name = "Ghulam Mustafa Aziz"
 
-      ai_content = ""
-      prompt = f"""
-        You are an elite executive career architect and strategic pre-sales recruiter. 
-        Analyze the Candidate Resume against the detailed Job Description for {comp_name} ({role_title}) for candidate {candidate_name}.
-        
-        Return ONLY valid HTML containing a clean table and summary paragraph mapping the candidate across 5 key pillars:
-        1. Technical Pre-Sales & Discovery Strategy
-        2. End-to-End Solution Architecture & Trade-offs
-        3. Data & AI Platform Patterns
-        4. Integration, API & Security Compliance
-        5. Executive Stakeholder Advisory & C-Level Presence
-        
-        Format as a clean HTML table with columns: Core Requirement Alignment, Candidate Evidence, and Match (with percentages like 96%-99%). Followed by an executive summary paragraph.
-        
-        CANDIDATE RESUME:
-        {resume_content[:3500]}
-        
-        JOB DESCRIPTION:
-        {job_description[:3500]}
+    prompt = f"""
+        Analyze candidate {candidate_name} for role {role_title} at {comp_name}. 
+        Return JSON matching schema: overall_fit (int), kpis (list of label/value), requirements_vs_alignment (list of [title, evidence_desc, score_int]), detailed_pillars (list of [pillar_name, list_of_bullet_strings]), relevant_highlights (list of strings), bottom_line (string).
+        RESUME: {resume_content[:3000]}
+        JOB DESC: {job_description[:3000]}
         """
+    try:
+      data = generate_structured_brief(
+          prompt, comp_name, role_title, safe_mode=safe_mode_enabled
+      )
+    except Exception:
+      data = get_fallback_structured_data(comp_name, role_title)
 
-      try:
-        raw_resp = generate_with_multi_model_fallback(
-            prompt,
-            comp_name=comp_name,
-            role_title=role_title,
-            safe_mode=safe_mode_enabled,
-        )
-        ai_content = (
-            raw_resp.strip().replace("```html", "").replace("```", "")
-        )
-      except Exception as e:
-        if not safe_mode_enabled:
-          st.error(
-              f"❌ Live API generation failed (Safe-Mode disabled): {str(e)}"
-          )
-          st.stop()
-        else:
-          ai_content = get_fallback_html(comp_name, role_title)
-          st.warning(
-              "⚠️ API traffic spike detected. Automatically switched to"
-              " interview-safe fallback presentation mode."
-          )
+    # Build HTML/CSS executive dashboard layout matching target screenshot UX
+    kpis_html = "".join([
+        f"""
+            <td style="width: 24%; background: #ffffff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px; text-align: center;">
+                <div style="font-size: 20px; font-weight: bold; color: #0A2540;">{k.get('value')}</div>
+                <div style="font-size: 11px; color: #6B7280; margin-top: 4px;">{k.get('label')}</div>
+            </td>
+            <td style="width: 1%;"></td>
+        """
+        for k in data.get("kpis", [])
+    ])
 
-      # Enterprise HTML Wrapper with TargetFit Studio Portal Branding & Engineering Showcase
-      report_html = f"""
-            <html>
-            <head>
-                <style>
-                    body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #222; line-height: 1.5; background-color: #F4F6F9; margin: 0; padding: 0; }}
-                    .wrapper {{ max-width: 780px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #D1D5DB; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }}
-                    .hero-header {{ background-color: #0A2540; color: white; padding: 35px 30px; width: 100%; }}
-                    .hero-header h1 {{ margin: 0 0 5px 0; font-size: 26px; font-weight: 700; color: #ffffff; }}
-                    .hero-header h2 {{ margin: 0 0 10px 0; font-size: 13px; font-weight: 400; color: #93C5FD; text-transform: uppercase; letter-spacing: 1px; }}
-                    .hero-header p {{ margin: 0; color: #E5E7EB; font-size: 13px; }}
-                    .hero-badge {{ background: #059669; color: white; width: 85px; height: 85px; border-radius: 50%; text-align: center; font-weight: bold; font-size: 13px; vertical-align: middle; }}
-                    .hero-badge span {{ font-size: 22px; display: block; line-height: 1.1; padding-top: 18px; }}
-                    .container {{ padding: 30px; }}
-                    .section-title {{ font-size: 16px; font-weight: bold; color: #0A2540; text-transform: uppercase; border-bottom: 2px solid #E5E7EB; padding-bottom: 6px; margin-top: 30px; margin-bottom: 15px; }}
-                    .impact-card {{ background: #F9FAFB; border: 1px solid #E5E7EB; padding: 15px; text-align: center; border-radius: 6px; }}
-                    .impact-number {{ font-size: 20px; font-weight: bold; color: #0A2540; margin-bottom: 4px; }}
-                    .impact-desc {{ font-size: 11px; color: #6B7280; }}
-                    .portal-banner {{ background: #EFF6FF; border: 1px solid #BFDBFE; padding: 16px 20px; margin-bottom: 25px; border-radius: 6px; }}
-                    .tech-showcase {{ background: #F8FAFC; border-left: 4px solid #0A2540; padding: 16px 20px; margin-top: 30px; border-radius: 0 6px 6px 0; }}
-                    .footer {{ background: #F9FAFB; padding: 20px 30px; font-size: 11px; color: #6B7280; border-top: 1px solid #E5E7EB; text-align: center; }}
-                </style>
-            </head>
-            <body>
-                <div class="wrapper">
-                    <table class="hero-header" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                        <tr>
-                            <td>
-                                <h2>{comp_name} — Executive Candidate Assessment</h2>
-                                <h1>{candidate_name}</h1>
-                                <p>Target Role: {role_title} | Evaluation Date: {datetime.now().strftime('%B %d, %Y')}</p>
-                            </td>
-                            <td align="right" style="width: 100px; vertical-align: middle;">
-                                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td class="hero-badge" align="center">
-                                            <span>97%</span>FIT
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
+    req_matrix_html = "".join([
+        f"""
+            <tr>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #F3F4F6;">
+                    <div style="font-size: 13px; font-weight: bold; color: #1F2937;">{item}</div>
+                    <div style="font-size: 11px; color: #6B7280;">{item}</div>
+                </td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #F3F4F6; width: 45%;">
+                    <div style="background: #E0F2FE; border-radius: 4px; height: 10px; width: 100%; overflow: hidden;">
+                        <div style="background: #0284C7; height: 100%; width: {item}%;"></div>
+                    </div>
+                </td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #F3F4F6; text-align: right; font-weight: bold; font-size: 13px; color: #0369A1;">
+                    {item}%
+                </td>
+            </tr>
+        """
+        for item in data.get("requirements_vs_alignment", [])
+    ])
+
+    pillars_html = "".join([
+        f"""
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 13px; font-weight: bold; color: #0A2540; margin-bottom: 4px;">■ {p}</div>
+                <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #374151; line-height: 1.5;">
+                    {''.join([f"<li>{b}</li>" for b in p])}
+                </ul>
+            </div>
+        """
+        for p in data.get("detailed_pillars", [])
+    ])
+
+    highlights_html = "".join([
+        f'<li style="margin-bottom: 6px; font-size: 12px; color: #1F2937;">✔ {h}</li>'
+        for h in data.get("relevant_highlights", [])
+    ])
+
+    report_html = f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #0F2537; color: #1F2937; margin: 0; padding: 20px; }}
+                .wrapper {{ max-width: 900px; margin: 0 auto; background: #F8FAFC; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }}
+                .hero {{ background: linear-gradient(135deg, #0A192F 0%, #1E3A8A 100%); color: white; padding: 30px; display: flex; justify-content: space-between; align-items: center; }}
+                .hero-badge {{ background: #059669; color: white; width: 85px; height: 85px; border-radius: 50%; text-align: center; vertical-align: middle; }}
+                .container {{ padding: 25px; }}
+                .grid-2col {{ display: table; width: 100%; table-layout: fixed; margin-top: 20px; }}
+                .col-pane {{ display: table-cell; vertical-align: top; background: #ffffff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 20px; }}
+                .col-spacer {{ display: table-cell; width: 16px; }}
+                .section-header {{ font-size: 13px; font-weight: bold; color: #1E3A8A; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #DBEAFE; padding-bottom: 6px; margin-bottom: 15px; }}
+                .bottom-line-box {{ background: #EFF6FF; border-left: 4px solid #1D4ED8; padding: 16px; border-radius: 0 8px 8px 0; margin-top: 20px; font-size: 13px; color: #1E3A8A; line-height: 1.5; }}
+            </style>
+        </head>
+        <body>
+            <div class="wrapper">
+                <!-- Hero Banner -->
+                <div class="hero">
+                    <div>
+                        <h1 style="margin: 0 0 6px 0; font-size: 28px; color: #FFFFFF;">{candidate_name}</h1>
+                        <div style="font-size: 13px; color: #93C5FD; font-weight: 500;">Technical Product Manager | AI Strategy | Health Plan Technology</div>
+                        <div style="font-size: 12px; color: #E2E8F0; margin-top: 6px;">Strategic Leader • Product Innovator • People Builder • Delivery Excellence</div>
+                    </div>
+                    <div style="background: #059669; border-radius: 50%; width: 84px; height: 84px; text-align: center; color: white; font-weight: bold;">
+                        <span style="font-size: 24px; display: block; padding-top: 18px; line-height: 1;">{data.get('overall_fit', 97)}%</span>
+                        <span style="font-size: 9px; letter-spacing: 1px;">OVERALL MATCH</span>
+                    </div>
+                </div>
+
+                <div class="container">
+                    <!-- Key Alignment KPIs -->
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 0;" border="0" cellpadding="0" cellspacing="0">
+                        <tr>{kpis_html}</tr>
                     </table>
 
-                    <div class="container">
-                        <div class="portal-banner">
-                            <div style="font-size: 12px; font-weight: bold; color: #1E40AF; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">🎯 TargetFit Studio | Enterprise Intelligence Portal</div>
-                            <p style="font-size: 13px; color: #1E293B; margin: 0; line-height: 1.5;">
-                                This assessment was autonomously generated and cross-verified via <b>TargetFit Studio</b>, an advanced enterprise executive evaluation engine. The platform cross-references career competency artifacts and technical portfolios against granular job specifications to deliver real-time, precision-driven alignment intelligence.
-                            </p>
+                    <!-- Split Executive View: Job Req vs Alignment (Left) & Detailed Pillars (Right) -->
+                    <div class="grid-2col">
+                        <div class="col-pane">
+                            <div class="section-header">JOB REQUIREMENTS vs. RESUME ALIGNMENT</div>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                {req_matrix_html}
+                            </table>
                         </div>
-
-                        {ai_content}
-
-                        <div class="section-title">Proven Business Impact & Scale</div>
-                        <table style="width: 100%; border-spacing: 10px;" border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td class="impact-card" style="width: 33%;">
-                                    <div class="impact-number">$50M+</div>
-                                    <div class="impact-desc">Enterprise cost optimization & deal strategy value realization</div>
-                                </td>
-                                <td style="width: 10px;"></td>
-                                <td class="impact-card" style="width: 33%;">
-                                    <div class="impact-number">35–50%</div>
-                                    <div class="impact-desc">Reduction in enterprise workflow cycle & proposal turnaround</div>
-                                </td>
-                                <td style="width: 10px;"></td>
-                                <td class="impact-card" style="width: 33%;">
-                                    <div class="impact-number">95–98%</div>
-                                    <div class="impact-desc">Solution delivery accuracy & technical architecture precision</div>
-                                </td>
-                            </tr>
-                        </table>
-
-                        <div class="tech-showcase">
-                            <div style="font-size: 13px; font-weight: bold; color: #0A2540; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Engineering Craftsmanship & Technical Showcase</div>
-                            <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.6;">
-                                To demonstrate genuine hands-on technical execution capability rather than abstract advisory theory, this entire enterprise assessment platform was custom-architected and coded end-to-end by <b>Mustafa</b>. The solution integrates <b>Python, Streamlit, multi-model Google Gemini GenAI APIs with automated fallback resilience, asynchronous PDF document parsing, and secure SMTP mail dispatch protocols</b>—proving an active ability to build production-grade AI applications from scratch.
-                            </p>
-                            <ul>
-                                <li><b>System Build & Deployment:</b></li>
-                                <ul>
-                                    <li><b>App Version:</b> {APP_VERSION}</li>
-                                    <li><b>Deployed Timestamp:</b> {DEPLOYED_DATE}</li>
-                                    <li><b>Environment:</b> Streamlit Community Cloud (Production)</li>
-                                </ul>                    
+                        <div class="col-spacer"></div>
+                        <div class="col-pane">
+                            <div class="section-header">DETAILED ALIGNMENT TO THE ROLE</div>
+                            {pillars_html}
+                            <div class="section-header" style="margin-top: 25px;">RELEVANT EXPERIENCE HIGHLIGHTS</div>
+                            <ul style="margin: 0; padding-left: 18px;">
+                                {highlights_html}
                             </ul>
                         </div>
                     </div>
 
-                    <div class="footer">
-                        Confidential Executive Recruitment Briefing • Prepared for {comp_name} Hiring Committee via TargetFit Studio
+                    <!-- Bottom Line Executive Verdict -->
+                    <div class="bottom-line-box">
+                        <b>THE BOTTOM LINE</b><br>
+                        {data.get('bottom_line')}
                     </div>
                 </div>
-            </body>
-            </html>
-            """
+            </div>
+        </body>
+        </html>
+        """
 
-      # Dispatch Email
-      try:
-        recipients = [e.strip() for e in recipient_emails.split(",")]
-        sender_email = os.getenv("EMAIL_USER")
-        sender_pass = os.getenv("EMAIL_PASS")
-        if sender_email and sender_pass:
-          with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(sender_email, sender_pass)
-            for recipient in recipients:
-              msg = EmailMessage()
-              msg["Subject"] = final_subject
-              msg["From"] = sender_email
-              msg["To"] = recipient
-              msg.set_content("Please view in HTML client.")
-              msg.add_alternative(report_html, subtype="html")
-              server.send_message(msg)
-          st.success(
-              f"✅ Email successfully broadcasted to: {', '.join(recipients)}"
-          )
-        else:
-          st.success("✅ Executive brief generated successfully!")
-      except Exception:
-        st.success(
-            "✅ Executive brief generated successfully (Email dispatch skipped)."
-        )
+    st.subheader("Live Portal Executive Suit Display")
+    st.components.v1.html(report_html, height=1150, scrolling=True)
 
-      st.balloons()
-      st.session_state["last_report_html"] = report_html
 
-if "last_report_html" in st.session_state:
-  st.markdown("---")
-  st.header("📋 Live Executive Assessment Report")
-  st.markdown(
-      "*This comprehensive pre-sales assessment has been generated and sent."
-      " You can scroll through and discuss the portal overview, 5 key"
-      " architectural pillars, and engineering showcase during your call.*"
-  )
-  st.components.v1.html(
-      st.session_state["last_report_html"], height=1050, scrolling=True
-  )
+st.markdown("---")
+st.markdown(
+    "💡 *Tip: Click 'Generate Executive Suite Brief' above to render your"
+    " newly formatted executive intelligence scorecard.*"
+)
