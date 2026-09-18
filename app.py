@@ -50,6 +50,11 @@ st.sidebar.markdown("---")
 st.sidebar.markdown(f"**App Version:** `{APP_VERSION}`")
 st.sidebar.markdown(f"**Deployed:** `{DEPLOYED_DATE}`")
 
+safe_mode_enabled = st.sidebar.checkbox(
+    "Enable Safe-Mode Fallback",
+    value=True,
+    help="Checked: Falls back on persistent traffic spikes. Unchecked: Fails/blocks on exhaustion without fallback.",
+)
 
 st.title("🎯 TargetFit Studio | Enterprise Executive Assessment Engine")
 st.markdown(
@@ -139,12 +144,10 @@ def fetch_job_from_url(url):
   return ""
 
 
-def generate_with_multi_model_fallback(prompt):
-  """Ultra-patient exponential backoff retry logic to ride out heavy API traffic spikes."""
+def generate_with_multi_model_fallback(prompt, safe_mode=True):
   models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash"]
 
   for model_name in models_to_try:
-    # Try each model 5 times with deep patience (10s, 20s, 30s, 40s, 50s)
     for attempt in range(5):
       try:
         response = client.models.generate_content(
@@ -154,22 +157,22 @@ def generate_with_multi_model_fallback(prompt):
           return response.text
       except Exception as e:
         err_str = str(e)
-        if (
-            "503" in err_str
-            or "429" in err_str
-            or "UNAVAILABLE" in err_str
-            or "RESOURCE_EXHAUSTED" in err_str
+        if any(
+            code in err_str
+            for code in ["503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED"]
         ):
-          # Deep exponential backoff: give the server more time to recover
-          wait_time = 10 * (attempt + 1)
-          time.sleep(wait_time)
+          time.sleep(10 * (attempt + 1))
           continue
         else:
           raise e
-  raise Exception(
-      "API traffic limits persisted across all extended retries. Safe-Mode"
-      " engaged."
-  )
+
+  if safe_mode:
+    return get_safe_mode_fallback_response()  # replace with your existing fallback call
+  else:
+    raise Exception(
+        "API rate/traffic limit persisted across retries with Safe-Mode"
+        " disabled."
+    )
 
 
 def get_fallback_html(comp_name, role_title):
