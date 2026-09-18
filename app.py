@@ -91,7 +91,6 @@ def get_fallback_structured_data(comp_name, role_title):
 def generate_structured_assessment(
     prompt, comp_name, role_title, safe_mode=True
 ):
-  # Latest API model cascade (Flash tier first for speed/cost, Pro for depth fallback)
   models_to_try = [
       "gemini-2.5-flash",
       "gemini-2.0-flash",
@@ -138,7 +137,7 @@ def generate_structured_assessment(
 # --- UI Layout ---
 st.title("TargetFit Studio — Executive Assessment Portal")
 
-col1, col2 = st.columns()
+col1, col2 = st.columns(2)
 with col1:
   candidate_name = st.text_input("Candidate Name", value="Ghulam Mustafa Aziz")
   comp_name = st.text_input("Target Company", value="Novartis")
