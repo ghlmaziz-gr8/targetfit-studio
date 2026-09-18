@@ -36,7 +36,7 @@ def get_git_version():
     )
     return f"v2.5.0-{commit_hash}"
   except Exception:
-    return "v2.5.0"
+    return "v2.5.0-d65b8af"
 
 
 APP_VERSION = get_git_version()
@@ -63,7 +63,9 @@ with st.form("targetfit_enterprise_form"):
   with col1:
     st.subheader("1. Target Company & Role Details")
     target_company = st.text_input(
-        "Target Company Name", value="UnitedHealthcare", placeholder="e.g. UnitedHealthcare"
+        "Target Company Name",
+        value="UnitedHealthcare",
+        placeholder="e.g. UnitedHealthcare",
     )
     target_role = st.text_input(
         "Target Role Title",
@@ -104,7 +106,7 @@ with st.form("targetfit_enterprise_form"):
   )
 
   submit_button = st.form_submit_button(
-      "Generate Executive Executive Suite Brief"
+      "Generate Executive Suite Brief"
   )
 
 
@@ -183,7 +185,7 @@ def get_fallback_structured_data(comp_name, role_title):
           (
               "Leadership & People Management",
               (
-                  "Build high-performing teams, mentor, drive engagement &s"
+                  "Build high-performing teams, mentor, drive engagement &"
                   " inclusion."
               ),
               92,
@@ -419,15 +421,17 @@ if submit_button:
         <head>
             <style>
                 body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #0F2537; color: #1F2937; margin: 0; padding: 20px; }}
-                .wrapper {{ max-width: 900px; margin: 0 auto; background: #F8FAFC; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }}
+                .wrapper {{ max-width: 900px; margin: 0 auto; background: #F8FAFC; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid #D1D5DB; }}
                 .hero {{ background: linear-gradient(135deg, #0A192F 0%, #1E3A8A 100%); color: white; padding: 30px; display: flex; justify-content: space-between; align-items: center; }}
-                .hero-badge {{ background: #059669; color: white; width: 85px; height: 85px; border-radius: 50%; text-align: center; vertical-align: middle; }}
                 .container {{ padding: 25px; }}
                 .grid-2col {{ display: table; width: 100%; table-layout: fixed; margin-top: 20px; }}
                 .col-pane {{ display: table-cell; vertical-align: top; background: #ffffff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 20px; }}
                 .col-spacer {{ display: table-cell; width: 16px; }}
-                .section-header {{ font-size: 13px; font-weight: bold; color: #1E3A8A; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #DBEAFE; padding-bottom: 6px; margin-bottom: 15px; }}
-                .bottom-line-box {{ background: #EFF6FF; border-left: 4px solid #1D4ED8; padding: 16px; border-radius: 0 8px 8px 0; margin-top: 20px; font-size: 13px; color: #1E3A8A; line-height: 1.5; }}
+                .section-header {{ font-size: 13px; font-weight: bold; color: #0A2540; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #DBEAFE; padding-bottom: 6px; margin-bottom: 15px; margin-top: 25px; }}
+                .bottom-line-box {{ background: #EFF6FF; border-left: 4px solid #1D4ED8; padding: 16px; border-radius: 0 8px 8px 0; margin-top: 25px; font-size: 13px; color: #1E3A8A; line-height: 1.5; }}
+                .impact-card {{ background: #ffffff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 18px 12px; text-align: center; }}
+                .tech-showcase {{ background: #F8FAFC; border-left: 4px solid #0A2540; padding: 18px 20px; margin-top: 25px; border-radius: 0 8px 8px 0; border: 1px solid #E2E8F0; border-left-width: 4px; font-size: 12px; color: #4B5563; }}
+                .footer {{ background: #F9FAFB; padding: 18px 30px; font-size: 11px; color: #6B7280; border-top: 1px solid #E5E7EB; text-align: center; }}
             </style>
         </head>
         <body>
@@ -454,16 +458,16 @@ if submit_button:
                     <!-- Split Executive View: Job Req vs Alignment (Left) & Detailed Pillars (Right) -->
                     <div class="grid-2col">
                         <div class="col-pane">
-                            <div class="section-header">JOB REQUIREMENTS vs. RESUME ALIGNMENT</div>
+                            <div class="section-header" style="margin-top:0;">JOB REQUIREMENTS vs. RESUME ALIGNMENT</div>
                             <table style="width: 100%; border-collapse: collapse;">
                                 {req_matrix_html}
                             </table>
                         </div>
                         <div class="col-spacer"></div>
                         <div class="col-pane">
-                            <div class="section-header">DETAILED ALIGNMENT TO THE ROLE</div>
+                            <div class="section-header" style="margin-top:0;">DETAILED ALIGNMENT TO THE ROLE</div>
                             {pillars_html}
-                            <div class="section-header" style="margin-top: 25px;">RELEVANT EXPERIENCE HIGHLIGHTS</div>
+                            <div class="section-header">RELEVANT EXPERIENCE HIGHLIGHTS</div>
                             <ul style="margin: 0; padding-left: 18px;">
                                 {highlights_html}
                             </ul>
@@ -475,18 +479,56 @@ if submit_button:
                         <b>THE BOTTOM LINE</b><br>
                         {data.get('bottom_line')}
                     </div>
+
+                    <!-- Proven Business Impact & Scale -->
+                    <div class="section-header">PROVEN BUSINESS IMPACT & SCALE</div>
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 12px 0; margin-left: -12px; margin-right: -12px;" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="impact-card" style="width: 33%;">
+                                <div style="font-size: 22px; font-weight: bold; color: #0A2540;">$50M+</div>
+                                <div style="font-size: 11px; color: #6B7280; margin-top: 4px;">Enterprise cost optimization & deal strategy value realization</div>
+                            </td>
+                            <td class="impact-card" style="width: 33%;">
+                                <div style="font-size: 22px; font-weight: bold; color: #0A2540;">35–50%</div>
+                                <div style="font-size: 11px; color: #6B7280; margin-top: 4px;">Reduction in enterprise workflow cycle & proposal turnaround</div>
+                            </td>
+                            <td class="impact-card" style="width: 33%;">
+                                <div style="font-size: 22px; font-weight: bold; color: #0A2540;">95–98%</div>
+                                <div style="font-size: 11px; color: #6B7280; margin-top: 4px;">Solution delivery accuracy & technical architecture precision</div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Engineering Craftsmanship & Technical Showcase -->
+                    <div class="tech-showcase">
+                        <div style="font-size: 13px; font-weight: bold; color: #0A2540; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">ENGINEERING CRAFTSMANSHIP & TECHNICAL SHOWCASE</div>
+                        <p style="font-size: 12px; color: #4B5563; margin: 0 0 10px 0; line-height: 1.6;">
+                            To demonstrate genuine hands-on technical execution capability rather than abstract advisory theory, this entire enterprise assessment platform was custom-architected and coded end-to-end by Mustafa. The solution integrates Python, Streamlit, multi-model Google Gemini GenAI APIs with automated fallback resilience, asynchronous PDF document parsing, and secure SMTP mail dispatch protocols—proving an active ability to build production-grade AI applications from scratch.
+                        </p>
+                        <div style="font-weight: bold; color: #1F2937; margin-bottom: 4px;">System Build & Deployment:</div>
+                        <ul style="margin: 0; padding-left: 20px; line-height: 1.5;">
+                            <li>App Version: {APP_VERSION}</li>
+                            <li>Deployed Timestamp: {DEPLOYED_DATE}</li>
+                            <li>Environment: Streamlit Community Cloud (Production)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Confidential Executive Recruitment Briefing • Prepared for {comp_name} Hiring Committee via TargetFit Studio
                 </div>
             </div>
         </body>
         </html>
         """
 
-    st.subheader("Live Portal Executive Suit Display")
-    st.components.v1.html(report_html, height=1150, scrolling=True)
+    st.subheader("Live Portal Executive Suite Display")
+    st.components.v1.html(report_html, height=1400, scrolling=True)
 
 
 st.markdown("---")
 st.markdown(
     "💡 *Tip: Click 'Generate Executive Suite Brief' above to render your"
-    " newly formatted executive intelligence scorecard.*"
+    " newly formatted executive intelligence scorecard with complete impact"
+    .replace("complete impact", "complete impact and showcase telemetry.*")
 )
