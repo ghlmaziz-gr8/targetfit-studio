@@ -185,8 +185,9 @@ def get_fallback_html(comp_name, role_title):
 def get_dynamic_models(client, preferred_order=None):
   if preferred_order is None:
     preferred_order = [
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.5-flash",
     ]
   available = set()
   try:
