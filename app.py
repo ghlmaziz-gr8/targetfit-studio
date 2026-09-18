@@ -534,7 +534,7 @@ if submit_button:
                 .container {{ padding: 25px; }}
                 .section-card {{ background: #ffffff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 22px; margin-bottom: 24px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }}
                 .section-header {{ font-size: 13px; font-weight: bold; color: #0A2540; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #DBEAFE; padding-bottom: 6px; margin-bottom: 18px; }}
-                .bottom-line-box { background: #ECFDF5; border-left: 4px solid #059669; padding: 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 13px; color: #065F46; line-height: 1.6; border-top: 1px solid #A7F3D0; border-right: 1px solid #A7F3D0; border-bottom: 1px solid #A7F3D0; border-left-width: 4px; }
+                .bottom-line-box {{ background: #ECFDF5; border-left: 4px solid #059669; padding: 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 13px; color: #065F46; line-height: 1.6; border-top: 1px solid #A7F3D0; border-right: 1px solid #A7F3D0; border-bottom: 1px solid #A7F3D0; border-left-width: 4px; }}
                 .impact-card {{ background: #ffffff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 18px 12px; text-align: center; }}
                 .tech-showcase {{ background: #F8FAFC; border: 1px solid #E2E8F0; border-left: 4px solid #0A2540; padding: 18px 20px; border-radius: 0 8px 8px 0; font-size: 12px; color: #4B5563; }}
                 .footer {{ background: #F9FAFB; padding: 18px 30px; font-size: 11px; color: #6B7280; border-top: 1px solid #E5E7EB; text-align: center; }}
