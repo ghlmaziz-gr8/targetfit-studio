@@ -3,6 +3,8 @@ import json
 import os
 import subprocess
 import time
+from email.message import EmailMessage
+import smtplib
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from google import genai
@@ -10,11 +12,19 @@ from pypdf import PdfReader
 import requests
 import streamlit as st
 
-# Load environment variables
+# Load local env if present
 load_dotenv()
 
+# Helper for secrets (supports Streamlit Cloud st.secrets or local os.getenv)
+def get_secret(key, default=""):
+    try:
+        return st.secrets.get(key, os.getenv(key, default))
+    except Exception:
+        return os.getenv(key, default)
+
 # Initialize Google GenAI Client
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+api_key = get_secret("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key) if api_key else genai.Client()
 
 # Page Configuration
 st.set_page_config(
@@ -33,9 +43,9 @@ def get_git_version():
         .decode("utf-8")
         .strip()
     )
-    return f"v2.6.0-{commit_hash}"
+    return f"v2.7.0-{commit_hash}"
   except Exception:
-    return "v2.6.0-stacked"
+    return "v2.7.0-stacked"
 
 
 APP_VERSION = get_git_version()
@@ -105,7 +115,7 @@ with st.form("targetfit_enterprise_form"):
   )
 
   submit_button = st.form_submit_button(
-      "Generate Executive Stacked Brief"
+      "Generate Executive Stacked Brief & Broadcast"
   )
 
 
@@ -378,60 +388,83 @@ if submit_button:
         for k in data.get("kpis", [])
     ])
 
-    # Clean unpacking for Requirements vs Alignment
+    # Clean unpacking / card generation for Requirements vs Alignment
     req_rows = ""
-for item in data.get("requirements_vs_alignment", []):
-  # Defensive unpacking whether LLM returns [title, desc, score] or dict or malformed list
-  if isinstance(item, dict):
-    title = item.get("title", "Requirement")
-    desc = item.get("description", item.get("evidence", ""))
-    score = int(item.get("score", 90))
-  elif isinstance(item, (list, tuple)):
-    flat_items = []
-    for x in item:
-      if isinstance(x, (list, tuple)):
-        flat_items.extend([str(i) for i in x])
+    for item in data.get("requirements_vs_alignment", []):
+      if isinstance(item, dict):
+        title = item.get("title", "Requirement")
+        desc = item.get("description", item.get("evidence", ""))
+        score = int(item.get("score", 90))
+      elif isinstance(item, (list, tuple)):
+        flat_items = []
+        for x in item:
+          if isinstance(x, (list, tuple)):
+            flat_items.extend([str(i) for i in x])
+          else:
+            flat_items.append(str(x))
+        scores = [
+            int(x) for x in flat_items if x.isdigit() and 50 <= int(x) <= 100
+        ]
+        score = scores[0] if scores else 92
+        text_items = [
+            x for x in flat_items if not (x.isdigit() and 50 <= int(x) <= 100)
+        ]
+        title = text_items[0] if len(text_items) > 0 else "Core Alignment"
+        desc = (
+            " | ".join(text_items[1:])
+            if len(text_items) > 1
+            else "Verified enterprise execution and alignment."
+        )
       else:
-        flat_items.append(str(x))
-    # Extract likely numbers for score, text for title/desc
-    scores = [int(x) for x in flat_items if x.isdigit() and 50 <= int(x) <= 100]
-    score = scores[0] if scores else 92
-    text_items = [x for x in flat_items if not (x.isdigit() and 50 <= int(x) <= 100)]
-    title = text_items[0] if len(text_items) > 0 else "Core Alignment"
-    desc = " | ".join(text_items[1:]) if len(text_items) > 1 else "Proven track record demonstrating end-to-end execution and measurable impact."
-  else:
-    title, desc, score = str(item), "Verified enterprise execution and alignment.", 92
+        title, desc, score = (
+            str(item),
+            "Verified enterprise execution and alignment.",
+            92,
+        )
 
-  # Clean string cleanup in case bracket relics persist
-  title = title.replace("[", "").replace("]", "").replace("'", "").strip()
-  desc = desc.replace("[", "").replace("]", "").replace("'", "").strip()
+      title = title.replace("[", "").replace("]", "").replace("'", "").strip()
+      desc = desc.replace("[", "").replace("]", "").replace("'", "").strip()
 
-  req_rows += f"""
-    <div style="background: #ffffff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;" border="0" cellpadding="0" cellspacing="0">
-            <tr>
-                <td style="font-size: 13px; font-weight: bold; color: #0A2540; text-align: left;">{title}</td>
-                <td style="font-size: 12px; font-weight: bold; color: #0284C7; text-align: right;">{score}% Match</td>
-            </tr>
-        </table>
-        <div style="background: #F1F5F9; border-radius: 4px; height: 8px; width: 100%; overflow: hidden; margin-bottom: 8px;">
-            <div style="background: linear-gradient(90deg, #0284C7, #059669); height: 100%; width: {score}%;"></div>
+      req_rows += f"""
+        <div style="background: #ffffff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;" border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="font-size: 13px; font-weight: bold; color: #0A2540; text-align: left;">{title}</td>
+                    <td style="font-size: 12px; font-weight: bold; color: #0284C7; text-align: right;">{score}% Match</td>
+                </tr>
+            </table>
+            <div style="background: #F1F5F9; border-radius: 4px; height: 8px; width: 100%; overflow: hidden; margin-bottom: 8px;">
+                <div style="background: linear-gradient(90deg, #0284C7, #059669); height: 100%; width: {score}%;"></div>
+            </div>
+            <div style="font-size: 11.5px; color: #4B5563; line-height: 1.4;">{desc}</div>
         </div>
-        <div style="font-size: 11.5px; color: #4B5563; line-height: 1.4;">{desc}</div>
-    </div>
-    """
+        """
 
     # Clean unpacking for Detailed Pillars
     pillars_html = ""
     for p in data.get("detailed_pillars", []):
-      if isinstance(p, (list, tuple)) and len(p) >= 2 and isinstance(p, list):
-        p_name, p_bullets = p[0], p
-      elif isinstance(p, (list, tuple)) and len(p) >= 1:
-        p_name = p[0]
-        p_bullets = [str(x) for x in p[1:]] if len(p) > 1 else [str(p[0])]
+      if isinstance(p, (list, tuple)) and len(p) >= 1:
+        p_name = str(p[0]).replace("[", "").replace("]", "").replace("'", "")
+        p_bullets = (
+            [
+                str(x)
+                .replace("[", "")
+                .replace("]", "")
+                .replace("'", "")
+                .strip()
+                for x in p[1:]
+            ]
+            if len(p) > 1
+            else [p_name]
+        )
+      elif isinstance(p, dict):
+        p_name = p.get("pillar", "Strategic Pillar")
+        p_bullets = p.get("bullets", [])
       else:
         p_name, p_bullets = str(p), []
-      bullets_list_str = "".join([f"<li style='margin-bottom: 4px;'>{b}</li>" for b in p_bullets])
+      bullets_list_str = "".join([
+          f"<li style='margin-bottom: 4px;'>{b}</li>" for b in p_bullets
+      ])
       pillars_html += f"""
             <div style="margin-bottom: 14px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 12px 16px;">
                 <div style="font-size: 13px; font-weight: bold; color: #0A2540; margin-bottom: 6px;">■ {p_name}</div>
@@ -486,9 +519,7 @@ for item in data.get("requirements_vs_alignment", []):
                     <!-- Stacked Section 1: Job Requirements vs Resume Alignment -->
                     <div class="section-card">
                         <div class="section-header">1. Job Requirements vs. Resume Alignment</div>
-                        <table style="width: 100%; border-collapse: collapse;">
-                            {req_rows}
-                        </table>
+                        {req_rows}
                     </div>
 
                     <!-- Stacked Section 2: Detailed Alignment to the Role -->
@@ -555,5 +586,36 @@ for item in data.get("requirements_vs_alignment", []):
         </html>
         """
 
-    st.subheader("Live Portal Stacked Executive Display")
-    st.components.v1.html(report_html, height=1600, scrolling=True)
+    # Dispatch Email with visible error capture
+    try:
+      recipients = [e.strip() for e in recipient_emails.split(",") if e.strip()]
+      sender_email = get_secret("EMAIL_USER")
+      sender_pass = get_secret("EMAIL_PASS")
+      
+      final_subject = subject_line if subject_line else f"Executive Candidate Assessment: {candidate_name} — {role_title} at {comp_name}"
+
+      if recipients and sender_email and sender_pass:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+          server.login(sender_email, sender_pass)
+          for recipient in recipients:
+            msg = EmailMessage()
+            msg["Subject"] = final_subject
+            msg["From"] = sender_email
+            msg["To"] = recipient
+            msg.set_content("Please view in HTML client.")
+            msg.add_alternative(report_html, subtype="html")
+            server.send_message(msg)
+        st.success(f"✅ Email successfully broadcasted to: {', '.join(recipients)}")
+      else:
+        st.info("ℹ️ Executive brief generated. Email dispatch skipped: Check recipient email field or add `EMAIL_USER`/`EMAIL_PASS` secrets in Streamlit Cloud Dashboard.")
+    except Exception as email_err:
+      st.warning(f"⚠️ Brief generated, but email dispatch failed: {str(email_err)}")
+
+    st.balloons()
+    st.session_state["last_report_html"] = report_html
+
+if "last_report_html" in st.session_state:
+  st.subheader("Live Portal Stacked Executive Display")
+  st.components.v1.html(
+      st.session_state["last_report_html"], height=1600, scrolling=True
+  )
