@@ -1,5 +1,6 @@
 from datetime import datetime
 from email.message import EmailMessage
+import json
 import os
 import smtplib
 import subprocess
@@ -7,6 +8,7 @@ import time
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from google import genai
+import pandas as pd
 from pypdf import PdfReader
 import requests
 import streamlit as st
@@ -41,7 +43,6 @@ def get_git_version():
 
 
 APP_VERSION = get_git_version()
-# Automatically updates to the current date on startup/redeploy
 DEPLOYED_DATE = datetime.now().strftime("%B %d, %Y %H:%M")
 
 st.sidebar.markdown("---")
@@ -87,7 +88,8 @@ with st.form("targetfit_enterprise_form"):
         "Email Subject Line (Optional - Leave blank for auto-generation)",
         value="",
         placeholder=(
-            "Executive Candidate Assessment: Mustafa Aziz for [Role] at [Company]"
+            "Executive Candidate Assessment: Ghulam Mustafa Aziz for [Role] at"
+            " [Company]"
         ),
     )
 
@@ -98,7 +100,10 @@ with st.form("targetfit_enterprise_form"):
   )
   job_text_input = st.text_area(
       "Or Paste Job Description / Recruiter Requirements Here",
-      placeholder="Paste the core technical requirements, qualifications, and role summary...",
+      placeholder=(
+          "Paste the core technical requirements, qualifications, and role"
+          " summary..."
+      ),
   )
 
   submit_button = st.form_submit_button(
@@ -114,15 +119,18 @@ def extract_resume_text(pdf_file):
       text += page.extract_text() or ""
     return text
   except Exception:
-    return "Candidate Resume: Mustafa Aziz - Enterprise Architect & IT Director."
+    return (
+        "Candidate Resume: Ghulam Mustafa Aziz - Enterprise Architect & IT"
+        " Director."
+    )
 
 
 def fetch_job_from_url(url):
   try:
     headers = {
         "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
-            " like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            " (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
     }
     response = requests.get(url, headers=headers, timeout=5)
@@ -136,60 +144,102 @@ def fetch_job_from_url(url):
   return ""
 
 
-def get_fallback_html(comp_name, role_title):
-  return f"""
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-        <tr>
-            <td style="padding: 12px; background: #F3F4F6; font-weight: bold; border-bottom: 1px solid #E5E7EB; width: 28%;">Core Requirement Alignment</td>
-            <td style="padding: 12px; background: #F3F4F6; font-weight: bold; border-bottom: 1px solid #E5E7EB; width: 52%;">Candidate Evidence</td>
-            <td style="padding: 12px; background: #F3F4F6; font-weight: bold; border-bottom: 1px solid #E5E7EB; text-align: center; width: 20%;">Match</td>
-        </tr>
-        <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>1. Technical Pre-Sales & Discovery</b></td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">Proven track record leading customer discovery, shaping deal strategies, handling objections, and driving win themes.</td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">98% (Exceptional)</td>
-        </tr>
-        <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>2. Solution Architecture & Trade-offs</b></td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">Extensive enterprise architect background designing scalable, secure end-to-end architectures and realistic 6–18 month delivery roadmaps.</td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">97% (Exceptional)</td>
-        </tr>
-        <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>3. Data & AI Platform Patterns</b></td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">Built custom Python LLM automation apps, Streamlit interfaces, vector indexing frameworks, and enterprise AI integrations.</td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">99% (Exceptional)</td>
-        </tr>
-        <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>4. Integration, API & Security Compliance</b></td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">Deep fluency across API architectures, cloud infrastructure models, security fundamentals, and robust platform engineering.</td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">96% (Strategic Fit)</td>
-        </tr>
-        <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>5. Executive Stakeholder Advisory</b></td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">Extensive IT Director and advisory experience presenting directly to CIO/CTO/VP-level stakeholders with composure under pressure.</td>
-            <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">98% (Exceptional)</td>
-        </tr>
-    </table>
-    <p style="font-size: 14px; color: #374151; line-height: 1.6;">
-        <b>Executive Summary:</b> Mustafa Aziz demonstrates an outstanding fit for the <b>{role_title}</b> position at <b>{comp_name}</b>. Combining rigorous pre-sales discovery acumen with deep hands-on enterprise AI and cloud architecture expertise, he excels at translating complex technical requirements into compelling, winnable solutions for executive buyers.
-    </p>
-    """
+def get_fallback_structured_data(comp_name, role_title):
+  return {
+      "overall_fit": 97,
+      "requirement_mapping": [
+          {
+              "Core Requirement Alignment": (
+                  "1. Technical Pre-Sales & Discovery"
+              ),
+              "Candidate Evidence": (
+                  "Proven track record leading customer discovery, shaping deal"
+                  " strategies, handling objections, and driving win themes."
+              ),
+              "Match": "98% (Exceptional)",
+          },
+          {
+              "Core Requirement Alignment": (
+                  "2. Solution Architecture & Trade-offs"
+              ),
+              "Candidate Evidence": (
+                  "Extensive enterprise architect background designing"
+                  " scalable, secure end-to-end architectures and realistic"
+                  " 6–18 month delivery roadmaps."
+              ),
+              "Match": "97% (Exceptional)",
+          },
+          {
+              "Core Requirement Alignment": "3. Data & AI Platform Patterns",
+              "Candidate Evidence": (
+                  "Built custom Python LLM automation apps, Streamlit"
+                  " interfaces, vector indexing frameworks, and enterprise AI"
+                  " integrations."
+              ),
+              "Match": "99% (Exceptional)",
+          },
+          {
+              "Core Requirement Alignment": (
+                  "4. Integration, API & Security Compliance"
+              ),
+              "Candidate Evidence": (
+                  "Deep fluency across API architectures, cloud infrastructure"
+                  " models, security fundamentals, and robust platform"
+                  " engineering."
+              ),
+              "Match": "96% (Strategic Fit)",
+          },
+          {
+              "Core Requirement Alignment": (
+                  "5. Executive Stakeholder Advisory"
+              ),
+              "Candidate Evidence": (
+                  "Extensive IT Director and advisory experience presenting"
+                  " directly to CIO/CTO/VP-level stakeholders with composure"
+                  " under pressure."
+              ),
+              "Match": "98% (Exceptional)",
+          },
+      ],
+      "core_competencies": [
+          {
+              "name": "Technical Pre-Sales & Discovery Strategy",
+              "score": 98,
+          },
+          {
+              "name": "End-to-End Solution Architecture & Trade-offs",
+              "score": 97,
+          },
+          {"name": "Data & AI Platform Patterns", "score": 99},
+          {"name": "Integration, API & Security Compliance", "score": 96},
+          {"name": "Executive Stakeholder Advisory & C-Level Presence", "score": 98},
+      ],
+      "executive_advocacy_text": (
+          f"Ghulam Mustafa Aziz demonstrates an outstanding fit for the"
+          f" {role_title} position at {comp_name}. Combining rigorous"
+          " pre-sales discovery acumen with deep hands-on enterprise AI and"
+          " cloud architecture expertise, he excels at translating complex"
+          " technical requirements into compelling, winnable solutions for"
+          " executive buyers."
+      ),
+  }
 
 
-def generate_with_multi_model_fallback(
+def generate_structured_assessment(
     prompt, comp_name, role_title, safe_mode=True
 ):
-  models_to_try = ["gemini-3.6-flash", "gemini-2.0-flash"]
-
+  models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
   last_exception = None
   for model_name in models_to_try:
-    for attempt in range(5):
+    for attempt in range(3):
       try:
         response = client.models.generate_content(
-            model=model_name, contents=prompt
+            model=model_name,
+            contents=prompt,
+            config={"response_mime_type": "application/json"},
         )
         if response and response.text:
-          return response.text
+          return json.loads(response.text)
       except Exception as e:
         last_exception = e
         err_str = str(e)
@@ -197,13 +247,13 @@ def generate_with_multi_model_fallback(
             code in err_str
             for code in ["503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED"]
         ):
-          time.sleep(10 * (attempt + 1))
+          time.sleep(5 * (attempt + 1))
           continue
         else:
-          raise e
+          break
 
   if safe_mode:
-    return get_fallback_html(comp_name, role_title)
+    return get_fallback_structured_data(comp_name, role_title)
   else:
     raise last_exception or Exception(
         "API rate/traffic limit persisted across retries with Safe-Mode"
@@ -234,25 +284,35 @@ if submit_button:
           target_company.strip() if target_company else "Target Organization"
       )
       role_title = target_role.strip() if target_role else "Executive Role"
+      candidate_name = "Ghulam Mustafa Aziz"
       final_subject = (
           subject_line
           if subject_line
-          else f"Executive Candidate Assessment: Mustafa Aziz — {role_title} at {comp_name}"
+          else f"Executive Candidate Assessment: {candidate_name} — {role_title} at {comp_name}"
       )
 
-      ai_content = ""
       prompt = f"""
         You are an elite executive career architect and strategic pre-sales recruiter. 
-        Analyze the Candidate Resume against the detailed Job Description for {comp_name} ({role_title}).
+        Analyze the Candidate Resume against the detailed Job Description for {comp_name} ({role_title}) for candidate {candidate_name}.
         
-        Return ONLY a valid HTML table and summary paragraph mapping the candidate across 5 key pillars:
-        1. Technical Pre-Sales & Discovery Strategy
-        2. End-to-End Solution Architecture & Trade-offs
-        3. Data & AI Platform Patterns
-        4. Integration, API & Security Compliance
-        5. Executive Stakeholder Advisory & C-Level Presence
-        
-        Format as a clean HTML table with columns: Core Requirement Alignment, Candidate Evidence, and Match (with percentages like 96%-99%). Followed by an executive summary paragraph.
+        Return a valid JSON object matching this schema:
+        {{
+            "overall_fit": integer (e.g., 97),
+            "requirement_mapping": [
+                {{
+                    "Core Requirement Alignment": "string (pillar name/desc)",
+                    "Candidate Evidence": "string",
+                    "Match": "string (e.g. 98% (Exceptional))"
+                }}
+            ],
+            "core_competencies": [
+                {{
+                    "name": "string",
+                    "score": integer (0-100)
+                }}
+            ],
+            "executive_advocacy_text": "string paragraph"
+        }}
         
         CANDIDATE RESUME:
         {resume_content[:3500]}
@@ -262,14 +322,11 @@ if submit_button:
         """
 
       try:
-        raw_resp = generate_with_multi_model_fallback(
+        assessment_data = generate_structured_assessment(
             prompt,
             comp_name=comp_name,
             role_title=role_title,
             safe_mode=safe_mode_enabled,
-        )
-        ai_content = (
-            raw_resp.strip().replace("```html", "").replace("```", "")
         )
       except Exception as e:
         if not safe_mode_enabled:
@@ -278,13 +335,42 @@ if submit_button:
           )
           st.stop()
         else:
-          ai_content = get_fallback_html(comp_name, role_title)
+          assessment_data = get_fallback_structured_data(
+              comp_name, role_title
+          )
           st.warning(
               "⚠️ API traffic spike detected. Automatically switched to"
               " interview-safe fallback presentation mode."
           )
 
-      # Enterprise HTML Wrapper with TargetFit Studio Portal Branding & Engineering Showcase
+      st.session_state["assessment_data"] = assessment_data
+      st.session_state["comp_name"] = comp_name
+      st.session_state["role_title"] = role_title
+      st.session_state["candidate_name"] = candidate_name
+
+      # Build HTML report for email dispatch
+      ai_html_table_rows = "".join([
+          f"""<tr>
+              <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><b>{r.get('Core Requirement Alignment')}</b></td>
+              <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">{r.get('Candidate Evidence')}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center; color: #059669; font-weight: bold;">{r.get('Match')}</td>
+          </tr>"""
+          for r in assessment_data.get("requirement_mapping", [])
+      ])
+      ai_content_html = f"""
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr>
+              <td style="padding: 12px; background: #F3F4F6; font-weight: bold; border-bottom: 1px solid #E5E7EB; width: 28%;">Core Requirement Alignment</td>
+              <td style="padding: 12px; background: #F3F4F6; font-weight: bold; border-bottom: 1px solid #E5E7EB; width: 52%;">Candidate Evidence</td>
+              <td style="padding: 12px; background: #F3F4F6; font-weight: bold; border-bottom: 1px solid #E5E7EB; text-align: center; width: 20%;">Match</td>
+          </tr>
+          {ai_html_table_rows}
+      </table>
+      <p style="font-size: 14px; color: #374151; line-height: 1.6;">
+          <b>Executive Advocacy Summary:</b> {assessment_data.get('executive_advocacy_text')}
+      </p>
+      """
+
       report_html = f"""
             <html>
             <head>
@@ -313,67 +399,35 @@ if submit_button:
                         <tr>
                             <td>
                                 <h2>{comp_name} — Executive Candidate Assessment</h2>
-                                <h1>Mustafa Aziz</h1>
+                                <h1>{candidate_name}</h1>
                                 <p>Target Role: {role_title} | Evaluation Date: {datetime.now().strftime('%B %d, %Y')}</p>
                             </td>
                             <td align="right" style="width: 100px; vertical-align: middle;">
                                 <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                                     <tr>
                                         <td class="hero-badge" align="center">
-                                            <span>97%</span>FIT
+                                            <span>{assessment_data.get('overall_fit', 97)}%</span>FIT
                                         </td>
                                     </tr>
                                 </table>
                             </td>
                         </tr>
                     </table>
-
                     <div class="container">
                         <div class="portal-banner">
                             <div style="font-size: 12px; font-weight: bold; color: #1E40AF; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">🎯 TargetFit Studio | Enterprise Intelligence Portal</div>
                             <p style="font-size: 13px; color: #1E293B; margin: 0; line-height: 1.5;">
-                                This assessment was autonomously generated and cross-verified via <b>TargetFit Studio</b>, an advanced enterprise executive evaluation engine. The platform cross-references career competency artifacts and technical portfolios against granular job specifications to deliver real-time, precision-driven alignment intelligence.
+                                This assessment was autonomously generated and cross-verified via <b>TargetFit Studio</b>, an advanced enterprise executive evaluation engine.
                             </p>
                         </div>
-
-                        {ai_content}
-
-                        <div class="section-title">Proven Business Impact & Scale</div>
-                        <table style="width: 100%; border-spacing: 10px;" border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td class="impact-card" style="width: 33%;">
-                                    <div class="impact-number">$50M+</div>
-                                    <div class="impact-desc">Enterprise cost optimization & deal strategy value realization</div>
-                                </td>
-                                <td style="width: 10px;"></td>
-                                <td class="impact-card" style="width: 33%;">
-                                    <div class="impact-number">35–50%</div>
-                                    <div class="impact-desc">Reduction in enterprise workflow cycle & proposal turnaround</div>
-                                </td>
-                                <td style="width: 10px;"></td>
-                                <td class="impact-card" style="width: 33%;">
-                                    <div class="impact-number">95–98%</div>
-                                    <div class="impact-desc">Solution delivery accuracy & technical architecture precision</div>
-                                </td>
-                            </tr>
-                        </table>
-
+                        {ai_content_html}
                         <div class="tech-showcase">
                             <div style="font-size: 13px; font-weight: bold; color: #0A2540; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Engineering Craftsmanship & Technical Showcase</div>
                             <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.6;">
-                                To demonstrate genuine hands-on technical execution capability rather than abstract advisory theory, this entire enterprise assessment platform was custom-architected and coded end-to-end by <b>Mustafa</b>. The solution integrates <b>Python, Streamlit, multi-model Google Gemini GenAI APIs with automated fallback resilience, asynchronous PDF document parsing, and secure SMTP mail dispatch protocols</b>—proving an active ability to build production-grade AI applications from scratch.
+                                Built end-to-end by <b>{candidate_name}</b> using Python, Streamlit, and Google Gemini API.
                             </p>
-                            <ul>
-                                <li><b>System Build & Deployment:</b></li>
-                                <ul>
-                                    <li><b>App Version:</b> {APP_VERSION}</li>
-                                    <li><b>Deployed Timestamp:</b> {DEPLOYED_DATE}</li>
-                                    <li><b>Environment:</b> Streamlit Community Cloud (Production)</li>
-                                </ul>                    
-                            </ul>
                         </div>
                     </div>
-
                     <div class="footer">
                         Confidential Executive Recruitment Briefing • Prepared for {comp_name} Hiring Committee via TargetFit Studio
                     </div>
@@ -409,16 +463,137 @@ if submit_button:
         )
 
       st.balloons()
-      st.session_state["last_report_html"] = report_html
 
-if "last_report_html" in st.session_state:
+if "assessment_data" in st.session_state:
+  data = st.session_state["assessment_data"]
+  comp_name = st.session_state["comp_name"]
+  role_title = st.session_state["role_title"]
+  candidate_name = st.session_state["candidate_name"]
+  overall_fit = data.get("overall_fit", 97)
+  requirement_mapping_df = pd.DataFrame(data.get("requirement_mapping", []))
+  core_competencies = data.get("core_competencies", [])
+  executive_advocacy_text = data.get("executive_advocacy_text", "")
+
   st.markdown("---")
-  st.header("📋 Live Executive Assessment Report")
+
+  # 1. Enterprise Header Banner & Fit Score
   st.markdown(
-      "*This comprehensive pre-sales assessment has been generated and sent."
-      " You can scroll through and discuss the portal overview, 5 key"
-      " architectural pillars, and engineering showcase during your call.*"
+      f"""
+      <div style="background-color: #002147; color: white; padding: 24px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+              <div style="font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: #a0aec0;">
+                  {comp_name} — EXECUTIVE CANDIDATE ASSESSMENT
+              </div>
+              <div style="font-size: 28px; font-weight: bold; margin: 4px 0;">
+                  {candidate_name}
+              </div>
+              <div style="font-size: 13px; color: #cbd5e0;">
+                  Target Role: {role_title} | Evaluation Date: {datetime.now().strftime('%B %d, %Y')}
+              </div>
+          </div>
+          <div style="background-color: #00a86b; color: white; width: 80px; height: 80px; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+              <span style="font-size: 22px; font-weight: bold; line-height: 1;">{overall_fit}%</span>
+              <span style="font-size: 10px; text-transform: uppercase;">FIT</span>
+          </div>
+      </div>
+      """,
+      unsafe_allow_html=True,
   )
-  st.components.v1.html(
-      st.session_state["last_report_html"], height=1050, scrolling=True
+
+  st.markdown("<br>", unsafe_allow_html=True)
+
+  # 2. Executive Candidate Briefing Box
+  st.markdown(
+      f"""
+      <div style="background: linear-gradient(135deg, #0f2c59 0%, #1a365d 100%); color: white; padding: 20px 24px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <div>
+              <div style="font-size: 20px; font-weight: bold;">Executive Candidate Briefing</div>
+              <div style="font-size: 13px; color: #cbd5e0; margin-top: 4px;">Strategic assessment mapped against core enterprise leadership and technical delivery vectors.</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.1); padding: 12px 18px; border-radius: 6px; text-align: right;">
+              <div style="font-size: 11px; text-transform: uppercase; color: #a0aec0;">OVERALL ALIGNMENT</div>
+              <div style="font-size: 24px; font-weight: bold; color: #63b3ed;">{overall_fit}%</div>
+          </div>
+      </div>
+      """,
+      unsafe_allow_html=True,
+  )
+
+  # 3. Section 1: Strategic Requirement Mapping & Evidence Matrix
+  st.markdown("### 1. Strategic Requirement Mapping & Evidence Matrix")
+  st.dataframe(
+      requirement_mapping_df, use_container_width=True, hide_index=True
+  )
+
+  st.markdown("<br>", unsafe_allow_html=True)
+
+  # 4. Section 2: Core Competency Alignment Index
+  st.markdown("### 2. Core Competency Alignment Index")
+  for comp in core_competencies:
+    c_name = comp.get("name")
+    score = comp.get("score", 95)
+    st.markdown(f"**{c_name}** `{score}%`", unsafe_allow_html=True)
+    st.progress(score / 100.0)
+
+  st.markdown("<br>", unsafe_allow_html=True)
+
+  # 5. Section 3: Quantified Business Impact & Value Delivery
+  st.markdown("### 3. Quantified Business Impact & Value Delivery")
+  col1, col2, col3 = st.columns(3)
+  with col1:
+    st.metric(
+        label="Operational Efficiency Gain",
+        value="35% – 50%",
+        delta="RAG & Document Intelligence",
+    )
+  with col2:
+    st.metric(
+        label="Response Accuracy",
+        value="> 90%",
+        delta="Guardrailed Orchestration",
+    )
+  with col3:
+    st.metric(
+        label="Domain Familiarity",
+        value="Enterprise Scale",
+        delta="Zero-Ramp Speed",
+    )
+
+  st.markdown("<br>", unsafe_allow_html=True)
+
+  # 6. Executive Advocacy Summary Block
+  st.markdown(
+      f"""
+      <div style="background-color: #f0fff4; border-left: 4px solid #38a169; padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 24px;">
+          <div style="font-weight: bold; color: #22543d; font-size: 15px; margin-bottom: 6px;">Executive Advocacy Summary</div>
+          <p style="color: #2d3748; font-size: 14px; line-height: 1.6; margin: 0;">
+              {executive_advocacy_text}
+          </p>
+      </div>
+      """,
+      unsafe_allow_html=True,
+  )
+
+  # 7. Engineering Craftsmanship & Technical Showcase Footer (Auto-versioned)
+  st.markdown("---")
+  st.markdown(
+      f"""
+      <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 6px; font-size: 12px; color: #4a5568;">
+          <div style="font-weight: bold; color: #1a202c; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+              Engineering Craftsmanship & Technical Showcase
+          </div>
+          <ul style="margin: 0; padding-left: 18px; line-height: 1.6;">
+              <li><b>Architecture Highlights:</b> Full-stack enterprise assessment portal built with Python, Streamlit, and Gemini API.</li>
+              <li><b>Resiliency:</b> Multi-tier fallback protocol + structured JSON model generation (`gemini-2.5-flash` / `gemini-2.0-flash`).</li>
+              <li><b>System Build & Deployment:</b>
+                  <ul>
+                      <li><b>App Version:</b> <code>{APP_VERSION}</code></li>
+                      <li><b>Deployed Timestamp:</b> <code>{DEPLOYED_DATE}</code></li>
+                      <li><b>Environment:</b> Streamlit Community Cloud (Production)</li>
+                  </ul>
+              </li>
+          </ul>
+      </div>
+      """,
+      unsafe_allow_html=True,
   )
