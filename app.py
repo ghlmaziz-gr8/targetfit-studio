@@ -2,6 +2,7 @@ from datetime import datetime
 from email.message import EmailMessage
 import os
 import smtplib
+import subprocess
 import time
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -22,9 +23,6 @@ st.set_page_config(
     page_icon="🎯",
     layout="wide",
 )
-
-import subprocess
-from datetime import datetime
 
 
 # Automatically fetch the latest git commit hash for versioning
@@ -103,12 +101,6 @@ with st.form("targetfit_enterprise_form"):
       placeholder="Paste the core technical requirements, qualifications, and role summary...",
   )
 
-  # Interview Safety Switch
-  force_demo_mode = st.checkbox(
-      "🛡️ Interview Safe-Mode (Use instant cached synthesis if API spikes)",
-      value=False,
-  )
-
   submit_button = st.form_submit_button(
       "Generate Enterprise Brief & Broadcast Report"
   )
@@ -142,37 +134,6 @@ def fetch_job_from_url(url):
   except Exception:
     pass
   return ""
-
-
-def generate_with_multi_model_fallback(prompt, safe_mode=True):
-  models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash"]
-
-  for model_name in models_to_try:
-    for attempt in range(5):
-      try:
-        response = client.models.generate_content(
-            model=model_name, contents=prompt
-        )
-        if response and response.text:
-          return response.text
-      except Exception as e:
-        err_str = str(e)
-        if any(
-            code in err_str
-            for code in ["503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED"]
-        ):
-          time.sleep(10 * (attempt + 1))
-          continue
-        else:
-          raise e
-
-  if safe_mode:
-    return get_safe_mode_fallback_response()  # replace with your existing fallback call
-  else:
-    raise Exception(
-        "API rate/traffic limit persisted across retries with Safe-Mode"
-        " disabled."
-    )
 
 
 def get_fallback_html(comp_name, role_title):
@@ -215,6 +176,41 @@ def get_fallback_html(comp_name, role_title):
     """
 
 
+def generate_with_multi_model_fallback(
+    prompt, comp_name, role_title, safe_mode=True
+):
+  models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash"]
+
+  last_exception = None
+  for model_name in models_to_try:
+    for attempt in range(5):
+      try:
+        response = client.models.generate_content(
+            model=model_name, contents=prompt
+        )
+        if response and response.text:
+          return response.text
+      except Exception as e:
+        last_exception = e
+        err_str = str(e)
+        if any(
+            code in err_str
+            for code in ["503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED"]
+        ):
+          time.sleep(10 * (attempt + 1))
+          continue
+        else:
+          raise e
+
+  if safe_mode:
+    return get_fallback_html(comp_name, role_title)
+  else:
+    raise last_exception or Exception(
+        "API rate/traffic limit persisted across retries with Safe-Mode"
+        " disabled."
+    )
+
+
 if submit_button:
   if not recipient_emails:
     st.error("Please provide at least one recipient email address.")
@@ -245,38 +241,43 @@ if submit_button:
       )
 
       ai_content = ""
-      if force_demo_mode:
-        ai_content = get_fallback_html(comp_name, role_title)
-        st.info(
-            "🛡️ Interview Safe-Mode active: Loaded instant pre-optimized"
-            " synthesis."
+      prompt = f"""
+        You are an elite executive career architect and strategic pre-sales recruiter. 
+        Analyze the Candidate Resume against the detailed Job Description for {comp_name} ({role_title}).
+        
+        Return ONLY a valid HTML table and summary paragraph mapping the candidate across 5 key pillars:
+        1. Technical Pre-Sales & Discovery Strategy
+        2. End-to-End Solution Architecture & Trade-offs
+        3. Data & AI Platform Patterns
+        4. Integration, API & Security Compliance
+        5. Executive Stakeholder Advisory & C-Level Presence
+        
+        Format as a clean HTML table with columns: Core Requirement Alignment, Candidate Evidence, and Match (with percentages like 96%-99%). Followed by an executive summary paragraph.
+        
+        CANDIDATE RESUME:
+        {resume_content[:3500]}
+        
+        JOB DESCRIPTION:
+        {job_description[:3500]}
+        """
+
+      try:
+        raw_resp = generate_with_multi_model_fallback(
+            prompt,
+            comp_name=comp_name,
+            role_title=role_title,
+            safe_mode=safe_mode_enabled,
         )
-      else:
-        try:
-          prompt = f"""
-                    You are an elite executive career architect and strategic pre-sales recruiter. 
-                    Analyze the Candidate Resume against the detailed Job Description for {comp_name} ({role_title}).
-                    
-                    Return ONLY a valid HTML table and summary paragraph mapping the candidate across 5 key pillars:
-                    1. Technical Pre-Sales & Discovery Strategy
-                    2. End-to-End Solution Architecture & Trade-offs
-                    3. Data & AI Platform Patterns
-                    4. Integration, API & Security Compliance
-                    5. Executive Stakeholder Advisory & C-Level Presence
-                    
-                    Format as a clean HTML table with columns: Core Requirement Alignment, Candidate Evidence, and Match (with percentages like 96%-99%). Followed by an executive summary paragraph.
-                    
-                    CANDIDATE RESUME:
-                    {resume_content[:3500]}
-                    
-                    JOB DESCRIPTION:
-                    {job_description[:3500]}
-                    """
-          raw_resp = generate_with_multi_model_fallback(prompt)
-          ai_content = (
-              raw_resp.strip().replace("```html", "").replace("```", "")
+        ai_content = (
+            raw_resp.strip().replace("```html", "").replace("```", "")
+        )
+      except Exception as e:
+        if not safe_mode_enabled:
+          st.error(
+              f"❌ Live API generation failed (Safe-Mode disabled): {str(e)}"
           )
-        except Exception:
+          st.stop()
+        else:
           ai_content = get_fallback_html(comp_name, role_title)
           st.warning(
               "⚠️ API traffic spike detected. Automatically switched to"
@@ -328,7 +329,6 @@ if submit_button:
                     </table>
 
                     <div class="container">
-                        <!-- TargetFit Studio Portal Professional Overview Banner -->
                         <div class="portal-banner">
                             <div style="font-size: 12px; font-weight: bold; color: #1E40AF; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">🎯 TargetFit Studio | Enterprise Intelligence Portal</div>
                             <p style="font-size: 13px; color: #1E293B; margin: 0; line-height: 1.5;">
@@ -358,22 +358,19 @@ if submit_button:
                             </tr>
                         </table>
 
-                        <!-- Technical Engineering Showcase Section -->
                         <div class="tech-showcase">
                             <div style="font-size: 13px; font-weight: bold; color: #0A2540; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Engineering Craftsmanship & Technical Showcase</div>
                             <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.6;">
                                 To demonstrate genuine hands-on technical execution capability rather than abstract advisory theory, this entire enterprise assessment platform was custom-architected and coded end-to-end by <b>Mustafa</b>. The solution integrates <b>Python, Streamlit, multi-model Google Gemini GenAI APIs with automated fallback resilience, asynchronous PDF document parsing, and secure SMTP mail dispatch protocols</b>—proving an active ability to build production-grade AI applications from scratch.
-
-                            # HTML-formatted version block for the email
-                                <ul>
-                                    <li><b>System Build & Deployment:</b></li>
-                                    <ul>
-                                        <li><b>App Version:</b> {APP_VERSION}</li>
-                                        <li><b>Deployed Timestamp:</b> {DEPLOYED_DATE}</li>
-                                        <li><b>Environment:</b> Streamlit Community Cloud (Production)</li>
-                                    </ul>                       
-                                </ul>
                             </p>
+                            <ul>
+                                <li><b>System Build & Deployment:</b></li>
+                                <ul>
+                                    <li><b>App Version:</b> {APP_VERSION}</li>
+                                    <li><b>Deployed Timestamp:</b> {DEPLOYED_DATE}</li>
+                                    <li><b>Environment:</b> Streamlit Community Cloud (Production)</li>
+                                </ul>                    
+                            </ul>
                         </div>
                     </div>
 
