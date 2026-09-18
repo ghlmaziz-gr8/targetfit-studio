@@ -182,14 +182,42 @@ def get_fallback_html(comp_name, role_title):
     """
 
 
+def get_dynamic_models(client, preferred_order=None):
+  if preferred_order is None:
+    preferred_order = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-2.5-pro",
+        "gemini-1.5-flash",
+    ]
+  available = set()
+  try:
+    for m in client.models.list():
+      methods = getattr(m, "supported_generation_methods", [])
+      if "generateContent" in methods:
+        clean_name = m.name.replace("models/", "")
+        available.add(clean_name)
+  except Exception:
+    pass
+
+  # Prioritize preferred models that are actively available on your key/tier
+  ordered = [m for m in preferred_order if m in available]
+  # Append any other valid flash/pro variants discovered dynamically
+  for m in sorted(list(available)):
+    if m not in ordered and ("flash" in m or "pro" in m):
+      ordered.append(m)
+
+  return ordered if ordered else preferred_order
+
+
 def generate_with_multi_model_fallback(
     prompt, comp_name, role_title, safe_mode=True
 ):
-  models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+  models_to_try = get_dynamic_models(client)
 
   last_exception = None
   for model_name in models_to_try:
-    for attempt in range(3):
+    for attempt in range(2):
       try:
         response = client.models.generate_content(
             model=model_name, contents=prompt
@@ -210,7 +238,7 @@ def generate_with_multi_model_fallback(
                 "NOT_FOUND",
             ]
         ):
-          time.sleep(3 * (attempt + 1))
+          time.sleep(1)
           continue
         else:
           break
@@ -219,8 +247,7 @@ def generate_with_multi_model_fallback(
     return get_fallback_html(comp_name, role_title)
   else:
     raise last_exception or Exception(
-        "API rate/traffic limit persisted across retries with Safe-Mode"
-        " disabled."
+        "API generation failed across all discovered models."
     )
 
 
