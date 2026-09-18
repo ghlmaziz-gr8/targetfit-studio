@@ -186,7 +186,7 @@ def get_dynamic_models(client, preferred_order=None):
   if preferred_order is None:
     preferred_order = [
         "gemini-2.0-flash",
-        "gemini-3.1-pro-preview",
+        "gemini-1.5-flash",
     ]
   available = set()
   try:
