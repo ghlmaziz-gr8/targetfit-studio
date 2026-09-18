@@ -179,7 +179,7 @@ def get_fallback_html(comp_name, role_title):
 def generate_with_multi_model_fallback(
     prompt, comp_name, role_title, safe_mode=True
 ):
-  models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash"]
+  models_to_try = ["gemini-3.6-flash", "gemini-2.0-flash"]
 
   last_exception = None
   for model_name in models_to_try:
