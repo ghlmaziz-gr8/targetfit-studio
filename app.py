@@ -231,11 +231,12 @@ def generate_structured_assessment(
   models_to_try = [
       "gemini-2.5-flash",
       "gemini-2.0-flash",
-      "gemini-1.5-pro",
+      "gemini-2.5-pro",
   ]
   last_exception = None
+
   for model_name in models_to_try:
-    for attempt in range(3):
+    for attempt in range(2):
       try:
         response = client.models.generate_content(
             model=model_name,
@@ -258,17 +259,15 @@ def generate_structured_assessment(
                 "NOT_FOUND",
             ]
         ):
-          time.sleep(2 * (attempt + 1))
+          time.sleep(1)
           continue
-        else:
-          break
+        break
 
   if safe_mode:
     return get_fallback_structured_data(comp_name, role_title)
-  else:
-    raise last_exception or Exception(
-        "API generation failed across fallback models - 9/18/2026 4:04PM Version."
-    )
+  raise last_exception or Exception(
+      "API generation failed across all models. 9/18/2026 4:06pm version"
+  )
 
 
 if submit_button:
