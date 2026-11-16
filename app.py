@@ -43,9 +43,9 @@ def get_git_version():
         .decode("utf-8")
         .strip()
     )
-    return f"v2.7.0-{commit_hash}"
+    return f"v2.8.0-{commit_hash}"
   except Exception:
-    return "v2.7.0-stacked"
+    return "v2.8.0-ai-notes"
 
 
 APP_VERSION = get_git_version()
@@ -98,10 +98,15 @@ with st.form("targetfit_enterprise_form"):
         value="",
         placeholder="Executive Candidate Assessment: Ghulam Mustafa Aziz",
     )
-    custom_message = st.text_area(
-        "Custom Executive Message (Optional)",
-        placeholder="Add any specific notes or context for the hiring committee here...",
-    )
+    
+    # Suggested Transmittal Presets & AI Option
+    message_options = [
+        "AI-Generated Custom Summary (Tailored to Role)",
+        "Option 1: Professional & Direct — Highlighting core architecture alignment, enterprise scale, and immediate leadership impact.",
+        "Option 2: Collaborative & Visionary — Emphasizing strategic product governance, AI transformation roadmaps, and stakeholder enablement.",
+        "Option 3: Concise Transmittal — Sharing structured evaluation artifacts for the executive hiring committee review."
+    ]
+    selected_message_option = st.selectbox("Executive Transmittal Note Style", message_options)
 
   st.subheader("3. Job Description Source")
   job_url = st.text_input(
@@ -379,6 +384,23 @@ if submit_button:
       )
     except Exception:
       data = get_fallback_structured_data(comp_name, role_title)
+
+    # RESOLVE CUSTOM TRANSMITTAL NOTE (AI or Presets)
+    if "AI-Generated Custom Summary" in selected_message_option:
+      ai_note_prompt = f"""Write a professional, 2-sentence executive transmittal note for candidate {candidate_name} applying for {role_title} at {comp_name}. Tone should be confident, courteous, and tailored to executive leadership."""
+      try:
+        res_note = client.models.generate_content(model="gemini-2.0-flash", contents=ai_note_prompt)
+        custom_message = res_note.text.strip() if res_note and res_note.text else f"Pleased to share the executive evaluation matrix for {candidate_name} tailored for the {role_title} engagement at {comp_name}."
+      except Exception:
+        custom_message = f"Pleased to share the executive evaluation matrix for {candidate_name} tailored for the {role_title} engagement at {comp_name}."
+    elif "Option 1" in selected_message_option:
+      custom_message = f"Pleased to submit this executive candidate assessment for {candidate_name}. The attached intelligence brief highlights deep expertise in enterprise architecture, cloud-native engineering, and immediate value delivery for {comp_name}."
+    elif "Option 2" in selected_message_option:
+      custom_message = f"Sharing the structured alignment brief for {candidate_name} regarding the {role_title} role. This evaluation outlines strategic leadership capabilities across AI transformation, stakeholder alignment, and scalable product delivery."
+    elif "Option 3" in selected_message_option:
+      custom_message = f"Enclosed is the confidential executive candidate briefing prepared for the hiring committee at {comp_name} via TargetFit Studio."
+    else:
+      custom_message = ""
 
     # UNIVERSAL GUARDRAIL FOR MUSTAFA AZIZ (Applies to AI & Safe-Mode Fallback)
     resume_fname = (
