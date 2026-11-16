@@ -98,6 +98,10 @@ with st.form("targetfit_enterprise_form"):
         value="",
         placeholder="Executive Candidate Assessment: Ghulam Mustafa Aziz",
     )
+    custom_message = st.text_area(
+        "Custom Executive Message (Optional)",
+        placeholder="Add any specific notes or context for the hiring committee here...",
+    )
 
   st.subheader("3. Job Description Source")
   job_url = st.text_input(
@@ -524,6 +528,17 @@ if submit_button:
         for h in data.get("relevant_highlights", [])
     ])
 
+    custom_message_box = (
+        f"""
+        <div style="background: #FDF4FF; border-left: 4px solid #C084FC; padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 13px; color: #6B21A8; line-height: 1.6; border-top: 1px solid #F3E8FF; border-right: 1px solid #F3E8FF; border-bottom: 1px solid #F3E8FF; border-left-width: 4px;">
+            <b>EXECUTIVE TRANSMITTAL NOTE</b><br>
+            {custom_message}
+        </div>
+        """
+        if custom_message.strip()
+        else ""
+    )
+
     report_html = f"""
         <html>
         <head>
@@ -556,6 +571,8 @@ if submit_button:
                 </div>
 
                 <div class="container">
+                    {custom_message_box}
+                    
                     <!-- Key Alignment KPIs -->
                     <table style="width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 24px;" border="0" cellpadding="0" cellspacing="0">
                         <tr>{kpis_html}</tr>
