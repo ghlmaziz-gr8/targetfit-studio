@@ -43,9 +43,9 @@ def get_git_version():
         .decode("utf-8")
         .strip()
     )
-    return f"v2.11.0-{commit_hash}"
+    return f"v2.12.0-{commit_hash}"
   except Exception:
-    return "v2.11.0-single-step"
+    return "v2.12.0-append"
 
 
 APP_VERSION = get_git_version()
@@ -108,9 +108,9 @@ with st.form("targetfit_enterprise_form"):
     ]
     selected_message_option = st.selectbox("Executive Transmittal Note Style", message_options)
     
-    custom_message_override = st.text_area(
-        "Custom Transmittal Note Override (Optional — leave blank to use AI/Preset selection)",
-        placeholder="Type here to override the generated note entirely...",
+    custom_message_addition = st.text_area(
+        "Custom Note Addition (Optional — will be appended to the AI/Preset selection)",
+        placeholder="Type any extra notes or remarks to append...",
     )
 
   st.subheader("3. Job Description Source")
@@ -390,25 +390,28 @@ if submit_button:
     except Exception:
       data = get_fallback_structured_data(comp_name, role_title)
 
-    # RESOLVE TRANSMITTAL NOTE (Manual override takes priority; otherwise AI/Preset)
-    if custom_message_override.strip():
-      custom_message = custom_message_override.strip()
+    # GENERATE BASE AI / PRESET NOTE
+    if "AI-Generated Custom Summary" in selected_message_option:
+      ai_note_prompt = f"""Write a professional, 2-sentence executive transmittal note for candidate {candidate_name} applying for {role_title} at {comp_name}. Tone should be confident, courteous, and tailored to executive leadership."""
+      try:
+        res_note = client.models.generate_content(model="gemini-2.0-flash", contents=ai_note_prompt)
+        base_note = res_note.text.strip() if res_note and res_note.text else f"Pleased to share the executive evaluation matrix for {candidate_name} tailored for the {role_title} engagement at {comp_name}."
+      except Exception:
+        base_note = f"Pleased to share the executive evaluation matrix for {candidate_name} tailored for the {role_title} engagement at {comp_name}."
+    elif "Option 1" in selected_message_option:
+      base_note = f"Pleased to submit this executive candidate assessment for {candidate_name}. The attached intelligence brief highlights deep expertise in enterprise architecture, cloud-native engineering, and immediate value delivery for {comp_name}."
+    elif "Option 2" in selected_message_option:
+      base_note = f"Sharing the structured alignment brief for {candidate_name} regarding the {role_title} role. This evaluation outlines strategic leadership capabilities across AI transformation, stakeholder alignment, and scalable product delivery."
+    elif "Option 3" in selected_message_option:
+      base_note = f"Enclosed is the confidential executive candidate briefing prepared for the hiring committee at {comp_name} via TargetFit Studio."
     else:
-      if "AI-Generated Custom Summary" in selected_message_option:
-        ai_note_prompt = f"""Write a professional, 2-sentence executive transmittal note for candidate {candidate_name} applying for {role_title} at {comp_name}. Tone should be confident, courteous, and tailored to executive leadership."""
-        try:
-          res_note = client.models.generate_content(model="gemini-2.0-flash", contents=ai_note_prompt)
-          custom_message = res_note.text.strip() if res_note and res_note.text else f"Pleased to share the executive evaluation matrix for {candidate_name} tailored for the {role_title} engagement at {comp_name}."
-        except Exception:
-          custom_message = f"Pleased to share the executive evaluation matrix for {candidate_name} tailored for the {role_title} engagement at {comp_name}."
-      elif "Option 1" in selected_message_option:
-        custom_message = f"Pleased to submit this executive candidate assessment for {candidate_name}. The attached intelligence brief highlights deep expertise in enterprise architecture, cloud-native engineering, and immediate value delivery for {comp_name}."
-      elif "Option 2" in selected_message_option:
-        custom_message = f"Sharing the structured alignment brief for {candidate_name} regarding the {role_title} role. This evaluation outlines strategic leadership capabilities across AI transformation, stakeholder alignment, and scalable product delivery."
-      elif "Option 3" in selected_message_option:
-        custom_message = f"Enclosed is the confidential executive candidate briefing prepared for the hiring committee at {comp_name} via TargetFit Studio."
-      else:
-        custom_message = f"Pleased to share the executive evaluation matrix for {candidate_name} tailored for the {role_title} engagement at {comp_name}."
+      base_note = f"Pleased to share the executive evaluation matrix for {candidate_name} tailored for the {role_title} engagement at {comp_name}."
+
+    # APPEND CUSTOM MESSAGE IF PROVIDED
+    if custom_message_addition.strip():
+      custom_message = f"{base_note}<br><br>{custom_message_addition.strip()}"
+    else:
+      custom_message = base_note
 
     # UNIVERSAL GUARDRAIL FOR MUSTAFA AZIZ
     resume_fname = (
