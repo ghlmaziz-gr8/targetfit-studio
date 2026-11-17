@@ -572,6 +572,12 @@ if submit_button:
         else ""
     )
 
+    ai_notice_html = """
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 11.5px; color: #64748B; text-align: center;">
+            🤖 <em>Confidential Intelligence Notice: This executive evaluation matrix and alignment score have been synthesized using advanced AI analytics via TargetFit Studio.</em>
+        </div>
+    """
+
     report_html = f"""
         <html>
         <head>
@@ -605,6 +611,7 @@ if submit_button:
 
                 <div class="container">
                     {custom_message_box}
+                    {ai_notice_html}
                     
                     <!-- Key Alignment KPIs -->
                     <table style="width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 24px;" border="0" cellpadding="0" cellspacing="0">
@@ -675,7 +682,7 @@ if submit_button:
 
                 <div class="footer">
                     Confidential Executive Recruitment Briefing • Prepared for {comp_name} Hiring Committee via TargetFit Studio
-                </div>
+                </div>                
             </div>
         </body>
         </html>
